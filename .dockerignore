@@ -1,0 +1,9 @@
+.git
+.cursor
+data
+*.db
+**/_test*
+coverage
+README.md
+docs
+deploy

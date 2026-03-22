@@ -1,0 +1,18 @@
+---
+description: Deno and TypeScript conventions for this repo
+globs: "**/*.ts"
+alwaysApply: false
+---
+
+# Deno / TypeScript
+
+- Skip trivial comments (see always-applied project rule); let types and names carry meaning.
+- Use **`.ts`** sources; `deno.json` for tasks, lint, and imports.
+- Imports: prefer **versioned** specifiers or import map entries from `deno.json`.
+- Testing: `deno test`, colocate `*.test.ts` next to modules or under `tests/`.
+- Formatting: `deno fmt`; linting: `deno lint`.
+- Avoid Node-only APIs unless wrapped with a clear compatibility layer and documented.
+
+# Error handling
+
+- Return `Result`-style unions or throw typed errors at boundaries; log with context, not raw user payloads.

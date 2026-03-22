@@ -1,0 +1,41 @@
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: szerencsejatek-bot
+  namespace: default
+spec:
+  template:
+    spec:
+      containerConcurrency: 10
+      containers:
+        - image: dev.local/szerencsejatek-bot:latest
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 8080
+          env:
+            - name: PORT
+              value: "8080"
+            - name: DATABASE_URL
+              value: file:/data/app.db
+            - name: GAME_ID
+              value: otoslotto
+            # Scale-to-zero: set WEBHOOK_URL to the public HTTPS URL of this Knative Service
+            # (Kourier/ingress) + TELEGRAM_WEBHOOK_PATH (default /telegram/webhook).
+            # - name: WEBHOOK_URL
+            #   value: https://szerencsejatek-bot.default.example.com
+            # - name: TELEGRAM_WEBHOOK_SECRET
+            #   valueFrom:
+            #     secretKeyRef:
+            #       name: telegram-webhook
+            #       key: secret
+            # - name: BOT_TOKEN
+            #   valueFrom:
+            #     secretKeyRef:
+            #       name: telegram-bot
+            #       key: token
+          volumeMounts:
+            - name: data
+              mountPath: /data
+      volumes:
+        - name: data
+          emptyDir: {}

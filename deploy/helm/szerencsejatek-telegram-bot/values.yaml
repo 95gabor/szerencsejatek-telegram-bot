@@ -1,0 +1,79 @@
+# Default image — CI publishes to ghcr.io/95gabor/szerencsejatek-telegram-bot (see repo Actions)
+image:
+  repository: szerencsejatek-telegram-bot
+  tag: latest
+  pullPolicy: IfNotPresent
+
+nameOverride: ""
+# Knative Service / Deployment name (also used by Trigger subscriber ref)
+fullnameOverride: szerencsejatek-bot
+
+service:
+  port: 8080
+
+# --- Workload: Knative Service (scale-to-zero, recommended with Kourier/ingress) or plain Deployment
+knative:
+  enabled: true
+  containerConcurrency: 10
+  # imagePullPolicy Never is for local kind; use IfNotPresent for real registries
+  imagePullPolicy: ""
+
+# Plain Kubernetes Deployment + Service (set knative.enabled: false)
+deployment:
+  replicas: 1
+  resources: {}
+  # nodeSelector: {}
+  # tolerations: []
+  # affinity: {}
+
+# Optional Ingress (only when knative.enabled: false — for Knative, use your cluster ingress / Kourier)
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+  hosts:
+    - host: chart-example.local
+      paths:
+        - path: /
+          pathType: Prefix
+
+# SQLite: emptyDir (ephemeral) or PVC
+persistence:
+  enabled: false
+  storageClass: ""
+  accessMode: ReadWriteOnce
+  size: 1Gi
+
+# --- App configuration (maps to env)
+config:
+  gameId: otoslotto
+  defaultLocale: hu
+  logFormat: text
+  logLevel: info
+  telegramWebhookPath: /telegram/webhook
+  # Public HTTPS base (no trailing slash) for Telegram webhook — required for production Knative
+  webhookUrl: ""
+  # If set, used as DATABASE_URL (default below uses /data for persistent volume layout)
+  databaseUrl: ""
+  otoslottoResultJsonUrl: ""
+  otel:
+    serviceName: szerencsejatek-telegram-bot
+    serviceVersion: "0.1.0"
+    exporterOtlpEndpoint: ""
+
+# Telegram Bot API token — prefer existing Secret
+telegram:
+  existingSecret: ""
+  existingSecretKey: token
+  # If existingSecret is empty, set botToken to create a Secret (avoid in Git; use --set-file or Sealed Secrets)
+  botToken: ""
+
+# Optional webhook secret (X-Telegram-Bot-Api-Secret-Token)
+telegramWebhook:
+  existingSecret: ""
+  existingSecretKey: secret
+
+# Knative Eventing: Broker + Trigger → this Service (CloudEvents pipeline)
+eventing:
+  enabled: false
+  brokerName: default

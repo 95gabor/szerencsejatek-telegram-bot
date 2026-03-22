@@ -1,0 +1,55 @@
+name: e2e-kind
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [main]
+    paths:
+      - "scripts/kind-e2e.sh"
+      - "deploy/**"
+      - "deno.json"
+      - "tests/e2e/**"
+      - ".github/workflows/e2e-kind.yml"
+  push:
+    branches: [main]
+    paths:
+      - "scripts/kind-e2e.sh"
+      - "deploy/**"
+      - "deno.json"
+      - "tests/e2e/**"
+      - ".github/workflows/e2e-kind.yml"
+
+concurrency:
+  group: e2e-kind-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.7.7
+
+      - name: Install kubectl
+        uses: azure/setup-kubectl@v4
+
+      - name: Install kind
+        run: |
+          curl -sLO "https://github.com/kubernetes-sigs/kind/releases/download/v0.27.0/kind-linux-amd64"
+          chmod +x kind-linux-amd64
+          sudo mv kind-linux-amd64 /usr/local/bin/kind
+
+      - name: Install Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: v3.16.3
+
+      - name: kind + kubectl + helm smoke
+        run: deno task test:e2e

@@ -1,0 +1,45 @@
+{
+  "compilerOptions": {
+    "strict": true,
+    "lib": ["deno.window"]
+  },
+  "imports": {
+    "@opentelemetry/api": "npm:@opentelemetry/api@1.9.0",
+    "@opentelemetry/context-async-hooks": "npm:@opentelemetry/context-async-hooks@1.28.0",
+    "@opentelemetry/exporter-metrics-otlp-http": "npm:@opentelemetry/exporter-metrics-otlp-http@0.57.2",
+    "@opentelemetry/exporter-trace-otlp-http": "npm:@opentelemetry/exporter-trace-otlp-http@0.57.2",
+    "@opentelemetry/resources": "npm:@opentelemetry/resources@1.28.0",
+    "@opentelemetry/sdk-metrics": "npm:@opentelemetry/sdk-metrics@1.28.0",
+    "@opentelemetry/sdk-trace-base": "npm:@opentelemetry/sdk-trace-base@1.28.0",
+    "@opentelemetry/semantic-conventions": "npm:@opentelemetry/semantic-conventions@1.28.0",
+    "@std/dotenv": "jsr:@std/dotenv@0.225.6",
+    "cloudevents": "npm:cloudevents@10.0.0",
+    "grammy": "npm:grammy@1.38.4",
+    "zod": "npm:zod@3.24.2"
+  },
+  "tasks": {
+    "dev": "deno run --allow-net --allow-env --allow-read --allow-write --allow-ffi --watch src/server.ts",
+    "start": "deno run --allow-net --allow-env --allow-read --allow-write --allow-ffi src/server.ts",
+    "bot": "deno run --allow-net --allow-env --allow-read --allow-write --allow-ffi src/telegram_bot.ts",
+    "bot:watch": "deno run --allow-net --allow-env --allow-read --allow-write --allow-ffi --watch src/telegram_bot.ts",
+    "check": "deno fmt --check && deno lint && deno test --allow-all src/ tests/e2e",
+    "check-result": "deno run --allow-net --allow-env --allow-read scripts/check_draw_result.ts",
+    "test": "deno test --allow-all src/",
+    "test:integration": "deno test --allow-all tests/e2e",
+    "test:e2e": "deno task check && bash scripts/kind-e2e.sh",
+    "helm:lint": "helm lint deploy/helm/szerencsejatek-telegram-bot"
+  },
+  "lint": {
+    "rules": {
+      "tags": ["recommended"]
+    }
+  },
+  "fmt": {
+    "useTabs": false,
+    "lineWidth": 100,
+    "indentWidth": 2,
+    "semiColons": true,
+    "singleQuote": false,
+    "exclude": ["deploy/helm/**/templates/**"]
+  }
+}

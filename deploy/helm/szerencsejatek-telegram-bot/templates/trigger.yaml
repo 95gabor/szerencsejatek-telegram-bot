@@ -1,0 +1,15 @@
+{{- if and .Values.knative.enabled .Values.eventing.enabled }}
+apiVersion: eventing.knative.dev/v1
+kind: Trigger
+metadata:
+  name: {{ include "szerencsejatek-telegram-bot.fullname" . }}
+  labels:
+    {{- include "szerencsejatek-telegram-bot.labels" . | nindent 4 }}
+spec:
+  broker: {{ .Values.eventing.brokerName | quote }}
+  subscriber:
+    ref:
+      apiVersion: serving.knative.dev/v1
+      kind: Service
+      name: {{ include "szerencsejatek-telegram-bot.fullname" . }}
+{{- end }}

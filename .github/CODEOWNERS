@@ -1,0 +1,6 @@
+# Code owners are requested for review on PRs that touch matching paths.
+# Repository: https://github.com/95gabor/szerencsejatek-telegram-bot
+# Replace @95gabor with @org/team-name if you use GitHub teams.
+# Docs: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+
+* @95gabor

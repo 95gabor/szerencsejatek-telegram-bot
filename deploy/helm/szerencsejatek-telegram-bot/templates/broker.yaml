@@ -1,0 +1,8 @@
+{{- if and .Values.knative.enabled .Values.eventing.enabled }}
+apiVersion: eventing.knative.dev/v1
+kind: Broker
+metadata:
+  name: {{ .Values.eventing.brokerName }}
+  labels:
+    {{- include "szerencsejatek-telegram-bot.labels" . | nindent 4 }}
+{{- end }}

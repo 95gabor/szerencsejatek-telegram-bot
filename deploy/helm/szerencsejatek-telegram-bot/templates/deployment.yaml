@@ -1,0 +1,47 @@
+{{- if not .Values.knative.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "szerencsejatek-telegram-bot.fullname" . }}
+  labels:
+    {{- include "szerencsejatek-telegram-bot.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.deployment.replicas }}
+  selector:
+    matchLabels:
+      {{- include "szerencsejatek-telegram-bot.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "szerencsejatek-telegram-bot.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- with .Values.deployment.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.deployment.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.deployment.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: bot
+          image: {{ printf "%s:%s" .Values.image.repository .Values.image.tag | quote }}
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.service.port }}
+          env:
+            {{- include "szerencsejatek-telegram-bot.env" . | nindent 12 }}
+          volumeMounts:
+            {{- include "szerencsejatek-telegram-bot.volumeMounts" . | nindent 12 }}
+          {{- with .Values.deployment.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+      volumes:
+        {{- include "szerencsejatek-telegram-bot.volumes" . | nindent 8 }}
+{{- end }}

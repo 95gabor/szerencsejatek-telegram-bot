@@ -1,0 +1,23 @@
+{{- if .Values.knative.enabled }}
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: {{ include "szerencsejatek-telegram-bot.fullname" . }}
+  labels:
+    {{- include "szerencsejatek-telegram-bot.labels" . | nindent 4 }}
+spec:
+  template:
+    spec:
+      containerConcurrency: {{ .Values.knative.containerConcurrency }}
+      containers:
+        - image: {{ printf "%s:%s" .Values.image.repository .Values.image.tag | quote }}
+          imagePullPolicy: {{ include "szerencsejatek-telegram-bot.imagePullPolicy" . }}
+          ports:
+            - containerPort: {{ .Values.service.port }}
+          env:
+            {{- include "szerencsejatek-telegram-bot.env" . | nindent 12 }}
+          volumeMounts:
+            {{- include "szerencsejatek-telegram-bot.volumeMounts" . | nindent 12 }}
+      volumes:
+        {{- include "szerencsejatek-telegram-bot.volumes" . | nindent 8 }}
+{{- end }}

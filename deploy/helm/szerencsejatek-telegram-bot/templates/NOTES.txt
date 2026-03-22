@@ -1,0 +1,17 @@
+1. Image: CI publishes to ghcr.io/95gabor/szerencsejatek-telegram-bot — see
+   https://github.com/95gabor/szerencsejatek-telegram-bot/actions . To build locally:
+   docker build -f deploy/docker/Dockerfile -t {{ .Values.image.repository }}:{{ .Values.image.tag }} .
+
+2. Set `image.repository` / `image.tag` to match, and provide the Telegram token:
+   - `telegram.existingSecret` + key, or
+   - `telegram.botToken` (creates a Secret — avoid committing real tokens in values files).
+
+3. For **Knative** (`knative.enabled: true`):
+   - Set `config.webhookUrl` to the public HTTPS base URL of your Knative Route (no trailing slash).
+   - Wait for the Service to be Ready, then open the public URL + `config.telegramWebhookPath` for Telegram.
+
+4. For **Deployment** mode (`knative.enabled: false`):
+   - Expose the Service with an Ingress or LoadBalancer; set `config.webhookUrl` to that public URL.
+   - Enable `persistence.enabled` if you need SQLite to survive pod restarts.
+
+5. Optional CloudEvents pipeline: `eventing.enabled: true` (requires Knative Eventing + same namespace Broker).

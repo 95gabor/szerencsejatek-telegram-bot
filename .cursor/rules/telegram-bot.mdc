@@ -1,0 +1,14 @@
+---
+description: Telegram bot handlers, webhooks, and message formatting
+globs: "**/bot/**/*.ts,**/telegram/**/*.ts,**/handlers/**/*.ts"
+alwaysApply: false
+---
+
+# Telegram
+
+- Use **grammY** or **Telegraf** (pick one in `deno.json` / lockfile); keep update handling idempotent where Telegram may retry.
+- **Webhook** (production / Knative, scale-to-zero): **`server.ts`** + `WEBHOOK_URL` + grammY
+  `webhookCallback`; validate **`TELEGRAM_WEBHOOK_SECRET`**. **Long polling** only for local dev
+  (`telegram_bot.ts`).
+- **Messages**: short, clear Hungarian copy; avoid exposing internal IDs. Escape user input in dynamic text.
+- **Commands**: document in README and `/help`; use deep links only if product requires.
