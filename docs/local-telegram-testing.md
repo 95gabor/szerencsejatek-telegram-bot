@@ -83,14 +83,16 @@ To exercise the **same** code path as production (`src/server.ts` + grammY `webh
 - **Pipeline / draw notifications** (CloudEvents, `POST /`, fetch result, notify users) are separate
   from “chat with the bot”. With **`deno task start`** running locally, you can trigger a draw check
   via **`deno task check-result`** (sends `draw.update.requested` to `POST /`). For remote clusters,
-  set **`PIPELINE_BASE_URL`**. In **Kubernetes**, the Helm chart’s **CronJob** runs the same script
-  hourly against the in-cluster **ClusterIP** Service when **`workload.mode: longPolling`**.
+  set **`PIPELINE_BASE_URL`**. In **Kubernetes**, the Helm chart’s **CronJob** (when
+  **`cronjob.enabled`**) runs the same script on a schedule against the in-cluster Service URL for
+  **`server.ts`** — for **long polling**, **httpServer**, or **Knative** installs.
 
 - **Deploy / Helm** defaults and alternatives:
   [deploy/helm/szerencsejatek-telegram-bot/README.md](../deploy/helm/szerencsejatek-telegram-bot/README.md),
   [deploy/README.md](../deploy/README.md).
 
-- **kind / Knative** manual setup and CI smoke: [deploy/kind/README.md](../deploy/kind/README.md).
+- **kind**: CI smoke vs **local Telegram in cluster** —
+  [deploy/kind/README.md](../deploy/kind/README.md) (**`deno task kind:telegram`**).
 
 ## 6. Troubleshooting
 

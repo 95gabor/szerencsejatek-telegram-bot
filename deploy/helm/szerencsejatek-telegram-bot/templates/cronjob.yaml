@@ -1,4 +1,4 @@
-{{- if and (not .Values.knative.enabled) (eq .Values.workload.mode "longPolling") .Values.cronjob.enabled }}
+{{- if .Values.cronjob.enabled }}
 apiVersion: batch/v1
 kind: CronJob
 metadata:
@@ -32,6 +32,7 @@ spec:
                 - --allow-net
                 - --allow-env
                 - --allow-read
+                - --allow-sys
                 - scripts/check_draw_result.ts
               env:
                 - name: PIPELINE_BASE_URL

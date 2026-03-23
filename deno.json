@@ -18,15 +18,16 @@
     "zod": "npm:zod@3.24.2"
   },
   "tasks": {
-    "dev": "deno run --allow-net --allow-env --allow-read --allow-write --allow-ffi --watch src/server.ts",
-    "start": "deno run --allow-net --allow-env --allow-read --allow-write --allow-ffi src/server.ts",
-    "bot": "deno run --allow-net --allow-env --allow-read --allow-write --allow-ffi src/telegram_bot.ts",
-    "bot:watch": "deno run --allow-net --allow-env --allow-read --allow-write --allow-ffi --watch src/telegram_bot.ts",
+    "dev": "deno run --allow-net --allow-env --allow-read --allow-write --allow-ffi --allow-sys --watch src/server.ts",
+    "start": "deno run --allow-net --allow-env --allow-read --allow-write --allow-ffi --allow-sys src/server.ts",
+    "bot": "deno run --allow-net --allow-env --allow-read --allow-write --allow-ffi --allow-sys src/telegram_bot.ts",
+    "bot:watch": "deno run --allow-net --allow-env --allow-read --allow-write --allow-ffi --allow-sys --watch src/telegram_bot.ts",
     "check": "deno fmt --check && deno lint && deno test --allow-all src/ tests/e2e",
-    "check-result": "deno run --allow-net --allow-env --allow-read scripts/check_draw_result.ts",
+    "check-result": "deno run --allow-net --allow-env --allow-read --allow-sys scripts/check_draw_result.ts",
     "test": "deno test --allow-all src/",
     "test:integration": "deno test --allow-all tests/e2e",
     "test:e2e": "deno task check && bash scripts/kind-e2e.sh",
+    "kind:telegram": "bash scripts/kind-telegram-local.sh",
     "helm:lint": "helm lint deploy/helm/szerencsejatek-telegram-bot"
   },
   "lint": {

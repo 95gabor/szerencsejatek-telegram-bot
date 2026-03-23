@@ -19,8 +19,10 @@ knative:
   imagePullPolicy: ""
 
 # When knative.enabled is false:
-# - longPolling: telegram_bot (long poll) + server (ClusterIP only); CronJob posts draw update hourly
+# - longPolling: telegram_bot (long poll) + server (ClusterIP only)
 # - httpServer: single server.ts (webhook / CloudEvents; enable ingress below if you need external HTTP)
+# Optional CronJob (cronjob.enabled): POSTs draw check to server.ts on schedule (plain Deployment
+# modes above, or Knative Service — same in-cluster Service name as fullnameOverride)
 workload:
   mode: longPolling
 
