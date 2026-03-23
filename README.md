@@ -21,6 +21,8 @@ and when **official results** are available the bot **notifies** them with the w
 | [docs/adr/README.md](docs/adr/README.md)                                                               | Architecture decision records (ADRs)                                                          |
 | [docs/local-telegram-testing.md](docs/local-telegram-testing.md)                                       | **Local dev with a real Telegram bot** (long polling, optional webhook tunnel)                |
 | [AGENTS.md](AGENTS.md)                                                                                 | Short agent / contributor context                                                             |
+| [CONTRIBUTING.md](CONTRIBUTING.md)                                                                     | **Contributing** — PRs, checks, review; maintainer branch-protection notes                    |
+| [SECURITY.md](SECURITY.md)                                                                             | **Security** — reporting vulnerabilities responsibly                                          |
 
 ## AI-assisted development (Cursor)
 
