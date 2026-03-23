@@ -83,11 +83,14 @@ To exercise the **same** code path as production (`src/server.ts` + grammY `webh
 - **Pipeline / draw notifications** (CloudEvents, `POST /`, fetch result, notify users) are separate
   from “chat with the bot”. With **`deno task start`** running locally, you can trigger a draw check
   via **`deno task check-result`** (sends `draw.update.requested` to `POST /`). For remote clusters,
-  set **`PIPELINE_BASE_URL`**. Otherwise testing end-to-end usually means deploying or sending a
-  crafted CloudEvent; see [architecture.md](architecture.md) and
-  [deploy/kind/README.md](../deploy/kind/README.md).
+  set **`PIPELINE_BASE_URL`**. In **Kubernetes**, the Helm chart’s **CronJob** runs the same script
+  hourly against the in-cluster **ClusterIP** Service when **`workload.mode: longPolling`**.
 
-- **kind / Knative** e2e is documented in [deploy/kind/README.md](../deploy/kind/README.md).
+- **Deploy / Helm** defaults and alternatives:
+  [deploy/helm/szerencsejatek-telegram-bot/README.md](../deploy/helm/szerencsejatek-telegram-bot/README.md),
+  [deploy/README.md](../deploy/README.md).
+
+- **kind / Knative** manual setup and CI smoke: [deploy/kind/README.md](../deploy/kind/README.md).
 
 ## 6. Troubleshooting
 

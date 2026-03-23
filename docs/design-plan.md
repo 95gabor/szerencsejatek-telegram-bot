@@ -5,8 +5,9 @@
 - [x] Repo scaffold: Deno config, documentation, Cursor rules/skills/commands.
 - [x] HTTP health and CloudEvents `POST /` (`src/server.ts`); `deno task check` (fmt, lint, unit
       tests).
-- [x] kind smoke: `scripts/kind-e2e.sh` applies Knative CRDs then client dry-run; CI
-      `deno task test:e2e`.
+- [x] kind smoke: `scripts/kind-e2e.sh` applies Knative CRDs, client dry-run on `deploy/knative/*`,
+      **Helm lint**, Docker build/load, **Helm install** (`workload.mode=httpServer`,
+      `cronjob.enabled=false`); CI `deno task test:e2e`.
 - [x] Minimal bot: `/start`, `/help`, `/add`, `/lines`, `/remove`, `/result` (see
       `docs/requirements.md` §3); Telegram wired in `server.ts` (webhook) and `telegram_bot.ts`
       (long polling).
@@ -29,7 +30,9 @@ Telegram or test double).
 ## Phase 2 — Automated results
 
 - [ ] Pluggable **ingestion** module for the chosen official source.
-- [ ] Scheduler (cron or queue) with retries and backoff.
+- [ ] Scheduler (cron or queue) with retries and backoff. **Note:** Helm **`CronJob`** already posts
+      `draw.update.requested` hourly in **`workload.mode: longPolling`**; Phase 2 may extend
+      backoff, observability, or non-Kubernetes schedulers.
 - [ ] Stronger idempotency and monitoring.
 
 **Exit criteria**: No manual result entry for supported games in steady state.

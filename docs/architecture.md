@@ -1,52 +1,132 @@
 # Architecture — Szerencsejáték Telegram bot
 
-## 1. High-level diagram
+This document is the **high-level design (HLD)** and technical architecture: context, logical
+decomposition, pipeline, technology, deployment variants, and layout. **Product rules** live in
+[requirements.md](requirements.md); **decision rationale** in [adr/](adr/README.md).
 
-**Product behaviour** is defined in [requirements.md](requirements.md). **Telegram** is wired in
-`server.ts` (webhook + CloudEvents) and `telegram_bot.ts` (long polling). See
-[ADR 0001](adr/0001-cloud-events-pipeline.md) and [ADR 0003](adr/0003-http-cloudevents-knative.md).
+## 1. High-level design (HLD)
+
+### 1.1 System context
+
+Players use **Telegram** to register lines and read results. The bot compares stored lines to
+**published** draw results from a configurable source (today: **Ötöslottó** JSON feed). Outbound
+messages go back through the **Telegram Bot API**. Draw processing is driven by **CloudEvents** over
+HTTP (`POST /`) inside the app; schedulers or operators emit **`draw.update.requested`**.
 
 ```mermaid
 flowchart LR
+  subgraph actors [Actors]
+    U[Players]
+  end
+  subgraph telegram [Telegram Cloud]
+    API[Bot API]
+  end
+  subgraph bot [Szerencsejáték bot]
+    B[Bot + draw pipeline]
+  end
+  subgraph results [Official results]
+    SRC[Feed / manual import]
+  end
+  U <--> API
+  API <--> B
+  B <--> SRC
+  B --> API
+```
+
+### 1.2 Logical architecture
+
+**Telegram transport:** updates arrive via **long polling** (`telegram_bot.ts`) and/or **webhook**
+(`server.ts` + `WEBHOOK_URL`), never both for the same token except the **Helm longPolling** layout
+(one process polls; **`server.ts`** is **internal HTTP only** — see §5). **Handlers** implement
+commands; the **draw pipeline** fetches or accepts results, persists, matches, and **notifies** via
+`OutboundNotifier`. **Persistence** is **SQLite** (file) via Drizzle + libSQL.
+
+```mermaid
+flowchart TB
   subgraph users [Telegram users]
     U[Players]
   end
-  subgraph tg [Telegram]
-    API[Bot API]
+  subgraph tg [Telegram Bot API]
+    API[HTTPS]
   end
-  subgraph app [Deno application]
-    WH[Webhook or long poll]
-    H[Command handlers]
-    M[Match engine]
-    J[Draw result job]
+  subgraph app [Application processes]
+    subgraph inbound [Inbound updates]
+      WH[Long poll or webhook handler]
+      H[Command handlers]
+    end
+    subgraph pipeline [Draw pipeline]
+      J[CloudEvents router + stages]
+      M[Match + format messages]
+    end
+    DB[(SQLite file)]
   end
-  subgraph data [Persistence]
-    DB[(SQLite or Deno KV)]
+  subgraph external [Results]
+    SRC[Operator JSON / persist events]
   end
-  subgraph external [Official results]
-    SRC[API / feed / manual import]
+  subgraph triggers [Pipeline triggers]
+    TR["HTTP POST / (CloudEvent)<br/>CronJob · script · Knative · manual"]
   end
   U <--> API
   API <--> WH
   WH --> H
   H --> DB
+  TR --> J
   J --> SRC
   J --> DB
   J --> M
   M --> API
-  H --> M
+  H -.->|same DB| J
 ```
+
+### 1.3 Default deployment topology (Helm, `workload.mode: longPolling`)
+
+**No public HTTP** for the app by default (`ingress.enabled: false`). One **Pod** runs two
+containers sharing **`/data`**; a **ClusterIP** Service exposes **:8080** to the **pipeline**
+container only. A **CronJob** runs hourly and POSTs **`draw.update.requested`** to that Service.
+
+```mermaid
+flowchart TB
+  subgraph cluster [Kubernetes cluster]
+    subgraph cron [Batch]
+      CJ["CronJob<br/>check_draw_result.ts"]
+    end
+    subgraph net [Networking]
+      SVC[Service ClusterIP\n:8080]
+    end
+    subgraph pod [Pod]
+      TEL["Container: telegram_bot.ts"]
+      SRV["Container: server.ts<br/>POST / + /healthz"]
+      VOL[(SQLite /data/app.db)]
+    end
+  end
+  subgraph outside [Outside cluster]
+    TAPI[Telegram Bot API]
+    FEED[Ötöslottó JSON URL]
+  end
+  TEL <-->|long poll + commands| TAPI
+  SRV --> FEED
+  SRV --> TAPI
+  TEL --- VOL
+  SRV --- VOL
+  CJ -->|hourly POST /| SVC
+  SVC --> SRV
+```
+
+Other packaging options (**`httpServer`**, **Knative**, **Ingress**) are described in **§5**.
+
+See [ADR 0001](adr/0001-cloud-events-pipeline.md) and
+[ADR 0003](adr/0003-http-cloudevents-knative.md).
 
 ## 2. Components
 
-| Component     | Responsibility                                                                                       |
-| ------------- | ---------------------------------------------------------------------------------------------------- |
-| **Transport** | Telegram updates via **webhook** (prod) or **long polling** (dev).                                   |
-| **Handlers**  | Parse commands (`/start`, `/help`, game-specific flows), validate input, persist lines.              |
-| **Domain**    | Game definitions (ranges, picks), normalization of lines and draw results, **pure** match functions. |
-| **Ingestion** | Fetch or import draw results; map to internal `DrawResult` type; deduplicate by `(gameId, drawId)`.  |
-| **Notifier**  | Load subscribers with lines for that draw window; build messages; send via Bot API.                  |
-| **Storage**   | Users, games, lines, processed draws (for idempotency).                                              |
+| Component     | Responsibility                                                                                                                |
+| ------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| **Transport** | **Webhook** (`server.ts`), **long polling** (`telegram_bot.ts`), or **Helm default**: both in one Pod (poll + internal HTTP). |
+| **Handlers**  | Parse commands (`/start`, `/help`, game-specific flows), validate input, persist lines.                                       |
+| **Domain**    | Game definitions (ranges, picks), normalization of lines and draw results, **pure** match functions.                          |
+| **Ingestion** | Fetch or import draw results; map to internal `DrawResult` type; deduplicate by `(gameId, drawId)`.                           |
+| **Notifier**  | Load subscribers with lines for that draw window; build messages; send via Bot API.                                           |
+| **Storage**   | Users, games, lines, processed draws (for idempotency).                                                                       |
 
 ## 2.1 Ötöslottó pipeline (CNCF CloudEvents — DX over micro-optimisation)
 
@@ -121,13 +201,23 @@ record **Approved by** and **Approved at** (UTC ISO timestamp) in the ADR **Revi
 
 ## 5. Deployment modes
 
+- **Helm defaults (`knative.enabled: false`, `workload.mode: longPolling`,
+  `ingress.enabled: false`):** one **Pod** with **`telegram_bot.ts`** (long polling) and
+  **`server.ts`** (internal HTTP only — **ClusterIP** Service, no public ingress). A **CronJob**
+  runs hourly (`scripts/check_draw_result.ts`) and POSTs the draw pipeline to the in-cluster
+  Service. SQLite **`/data`** is shared by both containers. Enable **`ingress`** and
+  **`config.webhookUrl`** only if you need a public Telegram webhook instead of long polling. See
+  **§1.3** and
+  [deploy/helm/szerencsejatek-telegram-bot/README.md](../deploy/helm/szerencsejatek-telegram-bot/README.md).
 - **Telegram + scale-to-zero (recommended for Knative):** **`src/server.ts`** serves **Telegram
   webhooks** at **`POST ${TELEGRAM_WEBHOOK_PATH}`** (default **`/telegram/webhook`**) via grammY
   **`webhookCallback(..., "std/http")`**. Set **`WEBHOOK_URL`** (public **HTTPS** base, no trailing
   slash) and optionally **`TELEGRAM_WEBHOOK_SECRET`** so Telegram can POST updates while the
   revision is scaled to zero between requests. See [ADR 0005](adr/0005-telegram-grammy.md).
-- **Long polling (local dev):** **`src/telegram_bot.ts`** — no public URL needed; calls
-  **`deleteWebhook`** before polling so it does not fight **`server.ts`** webhooks in prod.
+- **Long polling:** **`src/telegram_bot.ts`** — no public URL needed; calls **`deleteWebhook`**
+  before polling so it does not fight **`server.ts`** webhooks when the **same** process or another
+  client has registered a webhook. In **Helm** long-polling mode, the polling container clears the
+  webhook while the **`server.ts`** sidecar serves **ClusterIP-only** HTTP (no public webhook URL).
 - **CloudEvents:** same **`server.ts`** — **`POST /`** for pipeline CloudEvents (`cloudevents` SDK).
 - **Knative Serving**: one Service can handle **both** Telegram webhooks and CloudEvents; **scale to
   zero** works when idle (no long-lived polling loop). **Knative Eventing** (Broker + Trigger) can
@@ -166,7 +256,7 @@ docs/
   adr/                       # architecture decision records (index: adr/README.md)
 deploy/
   docker/                    # Dockerfile
-  helm/szerencsejatek-telegram-bot/  # Helm chart (Knative Service or Deployment)
+  helm/szerencsejatek-telegram-bot/  # Helm: default longPolling + CronJob; optional httpServer / Knative
   knative/                   # Service, optional Broker/Trigger samples (reference YAML)
 ```
 

@@ -10,15 +10,17 @@ and when **official results** are available the bot **notifies** them with the w
 
 ## Documentation
 
-| Document                                                         | Purpose                                                                        |
-| ---------------------------------------------------------------- | ------------------------------------------------------------------------------ |
-| [docs/requirements.md](docs/requirements.md)                     | Functional/non-functional requirements and **open questions**                  |
-| [docs/architecture.md](docs/architecture.md)                     | Components, data flow, deployment notes                                        |
-| [deploy/kind/README.md](deploy/kind/README.md)                   | **kind** + **Knative** (Serving, Eventing, CloudEvents HTTP)                   |
-| [docs/design-plan.md](docs/design-plan.md)                       | Phased delivery and risks                                                      |
-| [docs/adr/README.md](docs/adr/README.md)                         | Architecture decision records (ADRs)                                           |
-| [docs/local-telegram-testing.md](docs/local-telegram-testing.md) | **Local dev with a real Telegram bot** (long polling, optional webhook tunnel) |
-| [AGENTS.md](AGENTS.md)                                           | Short agent / contributor context                                              |
+| Document                                                                                               | Purpose                                                                        |
+| ------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------ |
+| [docs/requirements.md](docs/requirements.md)                                                           | Functional/non-functional requirements and **open questions**                  |
+| [docs/architecture.md](docs/architecture.md)                                                           | **HLD** (§1), components, pipeline, tech stack, deployment modes               |
+| [deploy/README.md](deploy/README.md)                                                                   | **Deploy** index (Helm, kind, Dockerfile)                                      |
+| [deploy/helm/szerencsejatek-telegram-bot/README.md](deploy/helm/szerencsejatek-telegram-bot/README.md) | **Helm** — long polling + CronJob by default, optional webhook / Knative       |
+| [deploy/kind/README.md](deploy/kind/README.md)                                                         | **kind** + **Knative** manual install (Serving, Eventing, CloudEvents)         |
+| [docs/design-plan.md](docs/design-plan.md)                                                             | Phased delivery and risks                                                      |
+| [docs/adr/README.md](docs/adr/README.md)                                                               | Architecture decision records (ADRs)                                           |
+| [docs/local-telegram-testing.md](docs/local-telegram-testing.md)                                       | **Local dev with a real Telegram bot** (long polling, optional webhook tunnel) |
+| [AGENTS.md](AGENTS.md)                                                                                 | Short agent / contributor context                                              |
 
 ## AI-assisted development (Cursor)
 
@@ -61,31 +63,47 @@ deno task check
 This runs unit tests under `src/` and application e2e under `tests/e2e` (Ötöslottó pipeline with a
 temporary SQLite file, e.g. winning numbers `1,2,3,4,5`).
 
-**kind e2e** (optional, needs Docker + `kind` + `kubectl` + network for CRDs): `deno task test:e2e`
-— see [deploy/kind/README.md](deploy/kind/README.md). Deno wrapper:
-`E2E_KIND=1 deno task test:integration`.
+### Optional: kind + Helm smoke
 
-1. Run the **HTTP server** (CloudEvents `POST /`, Telegram webhook `POST …/telegram/webhook` when
-   `BOT_TOKEN` is set, health `GET /` or `GET /healthz`):
+Needs Docker, `kind`, `kubectl`, Helm, and outbound HTTPS for Knative CRD URLs. Runs
+`deno task test:e2e` — see [deploy/kind/README.md](deploy/kind/README.md). The script installs the
+chart with **`workload.mode=httpServer`** (single `server.ts` pod; no `BOT_TOKEN` required for
+smoke). Deno-only wrapper: `E2E_KIND=1 deno task test:integration`.
+
+### Local HTTP server (`deno task dev`)
+
+CloudEvents `POST /`, Telegram webhook `POST …/telegram/webhook` when `BOT_TOKEN` is set, health
+`GET /` or `GET /healthz`:
 
 ```bash
 deno task dev
 ```
 
-**Knative / scale-to-zero:** set `**WEBHOOK_URL`** to your public **HTTPS** URL (no trailing slash),
-optionally `**TELEGRAM_WEBHOOK_SECRET**`, and `**BOT_TOKEN**`. On startup, `server.ts` calls
-`**setWebhook**` so Telegram pushes updates — no long polling, so the revision can **scale to zero**
-when idle. Default webhook path: `**/telegram/webhook`** (`TELEGRAM_WEBHOOK_PATH`).
+**Knative / webhook (scale-to-zero):** set **`WEBHOOK_URL`** (public **HTTPS**, no trailing slash),
+optionally **`TELEGRAM_WEBHOOK_SECRET`**, and **`BOT_TOKEN`**. `server.ts` calls **`setWebhook`** at
+startup. Default webhook path: **`/telegram/webhook`** (`TELEGRAM_WEBHOOK_PATH`).
 
-**Local dev with a real bot (long polling, troubleshooting):**
-[docs/local-telegram-testing.md](docs/local-telegram-testing.md). Quick start: `deno task bot`
-(clears webhook first). Do not run `bot` and `server` with the same token at once.
+### Production (Helm)
 
-### Knative on kind
+Default chart values: **`workload.mode: longPolling`** — **`telegram_bot.ts`** (long polling) +
+**`server.ts`** on **ClusterIP** only (**`ingress.enabled: false`**); **CronJob** hourly
+(`scripts/check_draw_result.ts`). See
+[deploy/helm/szerencsejatek-telegram-bot/README.md](deploy/helm/szerencsejatek-telegram-bot/README.md)
+and [deploy/README.md](deploy/README.md). For public webhook or Knative, use **`httpServer`** or
+**`knative.enabled: true`** and set **`config.webhookUrl`** / ingress as documented there.
+
+### Local Telegram (long polling)
+
+[docs/local-telegram-testing.md](docs/local-telegram-testing.md) — `deno task bot` (clears webhook
+first). Do not run `bot` and a **local** `server.ts` with **`WEBHOOK_URL`** on the **same** token at
+once. The **Helm** long-polling Pod is an exception: two containers share one token by design (one
+polls, one serves internal HTTP only) — see [docs/architecture.md](docs/architecture.md) §5.
+
+### Knative on kind (manual)
 
 Build the container, create a **kind** cluster, install **Knative Serving** + **Kourier** and
-optional **Eventing**, then apply the manifests. Step-by-step:
-[deploy/kind/README.md](deploy/kind/README.md).
+optional **Eventing**, then apply the manifests or use the Helm **`knative.enabled: true`** path.
+Step-by-step: [deploy/kind/README.md](deploy/kind/README.md).
 
 ```bash
 docker build -f deploy/docker/Dockerfile -t dev.local/szerencsejatek-bot:latest .

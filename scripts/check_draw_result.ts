@@ -1,10 +1,14 @@
 /**
  * Triggers the draw pipeline on a running HTTP server: POST a
  * `dev.szerencsejatek.telegram.otoslotto.draw.update.requested.v1` CloudEvent to `POST /`
- * (same as Knative/Eventing would). Requires `deno task start` (or equivalent) listening.
+ * (same as Knative/Eventing or the Helm **CronJob** would).
+ *
+ * Requires `server.ts` listening (e.g. `deno task start`, or the **pipeline** container in Helm
+ * `workload.mode: longPolling`).
  *
  * Env: uses `loadConfig()` — `PORT`, `GAME_ID`, and optional `.env`.
- * Override base URL: `PIPELINE_BASE_URL` (e.g. `https://example.com` — no trailing slash).
+ * Override base URL: `PIPELINE_BASE_URL` (e.g. in-cluster `http://service.namespace.svc:8080` — no
+ * trailing slash).
  */
 import { loadConfig } from "../src/config/env.ts";
 import { createCloudEvent } from "../src/events/cloudevents.ts";

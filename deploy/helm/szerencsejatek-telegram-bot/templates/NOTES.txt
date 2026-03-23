@@ -2,16 +2,19 @@
    https://github.com/95gabor/szerencsejatek-telegram-bot/actions . To build locally:
    docker build -f deploy/docker/Dockerfile -t {{ .Values.image.repository }}:{{ .Values.image.tag }} .
 
-2. Set `image.repository` / `image.tag` to match, and provide the Telegram token:
+2. Telegram token (required for `workload.mode: longPolling`):
    - `telegram.existingSecret` + key, or
    - `telegram.botToken` (creates a Secret — avoid committing real tokens in values files).
 
-3. For **Knative** (`knative.enabled: true`):
+3. Default stack (`knative.enabled: false`, `workload.mode: longPolling`, `ingress.enabled: false`):
+   - Telegram: **long polling** (`telegram` container); no public HTTP for Telegram.
+   - Pipeline: **internal** HTTP only (`pipeline` container) — ClusterIP Service `{{ include "szerencsejatek-telegram-bot.fullname" . }}:{{ .Values.service.port }}` for CloudEvents.
+   - CronJob `*-draw-update` runs `scripts/check_draw_result.ts` on schedule `{{ .Values.cronjob.schedule }}` (default hourly).
+
+4. Public webhook / external HTTP: set `workload.mode: httpServer`, enable `ingress`, set `config.webhookUrl`, or use Knative (`knative.enabled: true`).
+
+5. For **Knative** (`knative.enabled: true`):
    - Set `config.webhookUrl` to the public HTTPS base URL of your Knative Route (no trailing slash).
    - Wait for the Service to be Ready, then open the public URL + `config.telegramWebhookPath` for Telegram.
 
-4. For **Deployment** mode (`knative.enabled: false`):
-   - Expose the Service with an Ingress or LoadBalancer; set `config.webhookUrl` to that public URL.
-   - Enable `persistence.enabled` if you need SQLite to survive pod restarts.
-
-5. Optional CloudEvents pipeline: `eventing.enabled: true` (requires Knative Eventing + same namespace Broker).
+6. Optional CloudEvents pipeline: `eventing.enabled: true` (requires Knative Eventing + same namespace Broker).

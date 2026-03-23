@@ -5,7 +5,8 @@
 ## Test plan
 
 - [ ] `deno task check`
-- [ ] If deploy/Helm changed: `deno task test:e2e` (Docker, kind, kubectl, Helm)
+- [ ] If deploy/Helm changed: `deno task test:e2e` (Docker, kind, kubectl, Helm; chart smoke uses
+      `workload.mode=httpServer`)
 
 ## Checklist
 

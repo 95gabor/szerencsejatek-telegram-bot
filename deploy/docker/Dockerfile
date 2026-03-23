@@ -5,8 +5,9 @@ WORKDIR /app
 
 COPY deno.json deno.lock ./
 COPY src ./src
+COPY scripts ./scripts
 
-RUN deno cache --lock=deno.lock src/server.ts
+RUN deno cache --lock=deno.lock src/server.ts src/telegram_bot.ts scripts/check_draw_result.ts
 
 ENV PORT=8080
 EXPOSE 8080

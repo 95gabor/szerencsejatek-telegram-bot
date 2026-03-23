@@ -47,6 +47,15 @@ Pinned in `deno.json` **import map** and `deno.lock`:
 | Approved by | (reviewer name or handle — after explicit approval of this ADR text) |
 | Approved at | `YYYY-MM-DDTHH:mm:ssZ` (UTC — when approval was given)               |
 
+## Kubernetes packaging (Helm)
+
+The **Helm** chart default (`workload.mode: longPolling`, `ingress.enabled: false`) runs
+**`telegram_bot.ts`** and **`server.ts`** in **one Pod** (long polling + **ClusterIP-only** HTTP for
+CloudEvents and notifier). A **CronJob** triggers **`draw.update.requested`** hourly via
+`scripts/check_draw_result.ts`. **Webhook + Knative** remain available via **`httpServer`** or
+**`knative.enabled: true`** (see `deploy/helm/szerencsejatek-telegram-bot/README.md`). This does not
+change the **grammY** choice; it documents how both transport styles coexist in production.
+
 ## Consequences
 
 - **Positive**: **Scale-to-zero** compatible via webhooks; one process for CloudEvents + Telegram +
