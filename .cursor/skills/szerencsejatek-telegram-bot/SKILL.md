@@ -42,10 +42,11 @@ description: >-
   see [ADR 0007](../../../docs/adr/0007-opentelemetry-metrics-tracing.md) and `src/observability/`.
 - **Stack**: TypeScript, Deno. Persist draws and lines with **Drizzle** + **libSQL** (SQLite file)
   as in `docs/architecture.md` and [ADR 0002](../../../docs/adr/0002-drizzle-libsql-sqlite.md). HTTP
-  entry: `src/server.ts` (CloudEvents). Keep `docs/` and `docs/adr/` aligned after substantive edits
-  ([ADR 0004](../../../docs/adr/0004-documentation-and-adrs.md)). For architecture ADRs: **ask the
-  user to approve** ADR text before filling **Approved by** and **Approved at** (UTC ISO timestamp)
-  in the **Review** section.
+  entry: `src/server.ts` (CloudEvents); **`telegram_bot.ts`** for long polling. **Helm** default:
+  both in one Pod + hourly **CronJob** (`deploy/helm/...`). Keep `docs/` and `docs/adr/` aligned
+  after substantive edits ([ADR 0004](../../../docs/adr/0004-documentation-and-adrs.md)). For
+  architecture ADRs: **ask the user to approve** ADR text before filling **Approved by** and
+  **Approved at** (UTC ISO timestamp) in the **Review** section.
 - **New dependencies**: When you add **npm:** or **jsr:** imports (import map or pinned in `src/`),
   **record it in the same PR** in the appropriate ADR **Dependencies** section (or a new ADR) and
   [dependency inventory](../../../docs/adr/README.md#dependency-inventory)—same rule as

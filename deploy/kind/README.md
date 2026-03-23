@@ -1,7 +1,14 @@
 # kind + Knative (Serving + Eventing)
 
-Run the bot as a **Knative Service** that accepts **CloudEvents over HTTP** (`POST /`). Knative
-Eventing can deliver events from a **Broker** to this service via a **Trigger**.
+This guide is for a **manual** kind cluster with **Knative Serving** + **Eventing** (CloudEvents
+`POST /`, Broker, Trigger). For day-to-day Kubernetes installs, prefer the **Helm** chart
+([`deploy/helm/szerencsejatek-telegram-bot/README.md`](../helm/szerencsejatek-telegram-bot/README.md)):
+defaults are **long polling** + internal **`server.ts`** (**ClusterIP**) + hourly **CronJob**, with
+**Ingress** and **Knative** opt-in.
+
+The sections below still apply if you run the bot as a **Knative Service** that accepts
+**CloudEvents over HTTP** (`POST /`). Knative Eventing can deliver events from a **Broker** to this
+service via a **Trigger**.
 
 Versions in the commands below are **examples** — pin to the
 [current Knative release](https://github.com/knative/serving/releases) for production.
@@ -12,10 +19,10 @@ Creates a **throwaway** kind cluster, applies **Knative Serving + Eventing CRDs*
 release URLs (so `kubectl` can map `serving.knative.dev` / `eventing.knative.dev` kinds), then runs
 `kubectl apply --dry-run=client` on `deploy/knative/*.yaml`. It then **lints** the Helm chart,
 **builds** the app image (`deploy/docker/Dockerfile`), **loads** it into kind, runs
-**`helm install`** in **Deployment** mode (`knative.enabled=false` — no Knative Serving controller
-in this script), and waits until the workload is **healthy** (`helm --wait`, then `kubectl wait` for
-Deployment Available and Pod Ready). The cluster is **always** deleted (`trap` on `EXIT` / `INT` /
-`TERM`).
+**`helm install`** with **`knative.enabled=false`**, **`workload.mode=httpServer`** (single
+`server.ts` pod — no `BOT_TOKEN` required for smoke), **`cronjob.enabled=false`**, and waits until
+the workload is **healthy** (`helm --wait`, then `kubectl wait` for Deployment Available and Pod
+Ready). The cluster is **always** deleted (`trap` on `EXIT` / `INT` / `TERM`).
 
 **Requirements:** `bash`, `kind`, `kubectl`, **Helm 3**, **Docker** (daemon running), and outbound
 HTTPS for CRD YAMLs.
@@ -101,6 +108,9 @@ kind load docker-image dev.local/szerencsejatek-bot:latest --name knative
 ```
 
 ## 5. Deploy the Knative Service
+
+For **Helm** with **`knative.enabled: true`**, use the chart instead of raw YAML when possible
+([`deploy/helm/szerencsejatek-telegram-bot/README.md`](../helm/szerencsejatek-telegram-bot/README.md)).
 
 ```bash
 kubectl apply -f deploy/knative/service.yaml

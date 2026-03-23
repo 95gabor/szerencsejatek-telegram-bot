@@ -1,9 +1,13 @@
 # Helm chart: `szerencsejatek-telegram-bot`
 
-Deploys the Deno HTTP server (`src/server.ts`) as either:
+Deploys the app as either:
 
-- **Knative Service** (default) — scale-to-zero, webhook + CloudEvents `POST /`
-- **Deployment + Service** (`knative.enabled: false`) — generic Kubernetes
+- **Default:** `knative.enabled: false`, `workload.mode: longPolling`, `ingress.enabled: false` —
+  **`telegram_bot.ts`** (long polling) + **`server.ts`** (internal HTTP for CloudEvents only,
+  **ClusterIP**); **CronJob** triggers draw checks hourly (`cronjob.schedule`, default `0 * * * *`).
+- **`workload.mode: httpServer`:** single **`server.ts`** Deployment (webhook / CloudEvents); add
+  **`ingress`** if you need public HTTP.
+- **`knative.enabled: true`:** Knative Service — scale-to-zero, webhook + CloudEvents `POST /`
 
 ## Prerequisites
 
@@ -13,15 +17,28 @@ Deploys the Deno HTTP server (`src/server.ts`) as either:
 - For Knative: cluster with **Knative Serving** (and optionally **Eventing** if you enable the
   Broker/Trigger).
 
-## Quick install
+## Quick install (default: long polling + internal pipeline, no ingress)
 
 ```bash
 helm upgrade --install szerencsejatek-bot ./deploy/helm/szerencsejatek-telegram-bot \
   --namespace default \
   --set image.repository=ghcr.io/95gabor/szerencsejatek-telegram-bot \
-  --set image.tag=1.0.0 \
+  --set image.tag=0.2.0 \
+  --set telegram.existingSecret=telegram-bot
+```
+
+**Webhook / Knative** (public HTTPS) — set `workload.mode: httpServer` or `knative.enabled: true`
+and configure `config.webhookUrl` / ingress as needed.
+
+```bash
+helm upgrade --install szerencsejatek-bot ./deploy/helm/szerencsejatek-telegram-bot \
+  --namespace default \
+  --set image.repository=ghcr.io/95gabor/szerencsejatek-telegram-bot \
+  --set image.tag=0.2.0 \
+  --set workload.mode=httpServer \
+  --set ingress.enabled=true \
   --set telegram.existingSecret=telegram-bot \
-  --set config.webhookUrl=https://ksvc-YOUR-ROUTE.example.com
+  --set config.webhookUrl=https://your-public-host.example.com
 ```
 
 Create the secret first:
@@ -39,12 +56,11 @@ Registry). Authenticate if the package is private:
 ```bash
 echo "$GITHUB_TOKEN" | helm registry login ghcr.io -u YOUR_GH_USERNAME --password-stdin
 helm install szerencsejatek-demo oci://ghcr.io/95gabor/szerencsejatek-telegram-bot/helm-charts/szerencsejatek-telegram-bot \
-  --version 0.1.0 \
+  --version 0.2.0 \
   --namespace default \
   --set image.repository=ghcr.io/95gabor/szerencsejatek-telegram-bot \
-  --set image.tag=0.1.0 \
-  --set telegram.existingSecret=telegram-bot \
-  --set config.webhookUrl=https://ksvc-YOUR-ROUTE.example.com
+  --set image.tag=0.2.0 \
+  --set telegram.existingSecret=telegram-bot
 ```
 
 Use the **same semver** for `--version` and `image.tag` as the release you installed.
@@ -54,7 +70,8 @@ Use the **same semver** for `--version` and `image.tag` as the release you insta
 | Area                  | Keys                                                                                                  |
 | --------------------- | ----------------------------------------------------------------------------------------------------- |
 | Image                 | `image.repository`, `image.tag`, `image.pullPolicy`                                                   |
-| Workload              | `knative.enabled`, `knative.containerConcurrency`, `deployment.*`                                     |
+| Workload              | `knative.enabled`, `workload.mode` (`longPolling` \| `httpServer`), `deployment.*`                    |
+| CronJob               | `cronjob.enabled`, `cronjob.schedule`, `cronjob.suspend` (only when `workload.mode: longPolling`)     |
 | Telegram              | `telegram.existingSecret`, `telegram.botToken`, `config.webhookUrl`, `telegramWebhook.existingSecret` |
 | App                   | `config.gameId`, `config.logFormat`, `config.otel.*`, `config.otoslottoResultJsonUrl`                 |
 | Storage               | `persistence.enabled`, `persistence.size`, `persistence.storageClass`                                 |

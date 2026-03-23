@@ -32,17 +32,18 @@ games). The stack is **TypeScript on Deno**.
 
 ## Where to look
 
-| Topic                          | Location                                                                                     |
-| ------------------------------ | -------------------------------------------------------------------------------------------- |
-| Requirements & open questions  | `docs/requirements.md`                                                                       |
-| System design                  | `docs/architecture.md`                                                                       |
-| Architecture decisions (ADRs)  | `docs/adr/README.md` (incl. [dependency inventory](docs/adr/README.md#dependency-inventory)) |
-| Metrics & tracing (OTel)       | [ADR 0007](docs/adr/0007-opentelemetry-metrics-tracing.md), `src/observability/`             |
-| Structured logging             | `src/logging/` (`LOG_FORMAT`, `LOG_LEVEL`; `trace_id` / `span_id` when OTel span active)     |
-| Local testing vs real Telegram | `docs/local-telegram-testing.md`                                                             |
-| Phasing & risks                | `docs/design-plan.md`                                                                        |
-| Deno / TS conventions          | `.cursor/rules/`                                                                             |
-| Domain + workflows             | `.cursor/skills/szerencsejatek-telegram-bot/SKILL.md`                                        |
+| Topic                          | Location                                                                                         |
+| ------------------------------ | ------------------------------------------------------------------------------------------------ |
+| Requirements & open questions  | `docs/requirements.md`                                                                           |
+| System design / HLD            | `docs/architecture.md` (§1 HLD, then components & deployment)                                    |
+| Architecture decisions (ADRs)  | `docs/adr/README.md` (incl. [dependency inventory](docs/adr/README.md#dependency-inventory))     |
+| Metrics & tracing (OTel)       | [ADR 0007](docs/adr/0007-opentelemetry-metrics-tracing.md), `src/observability/`                 |
+| Structured logging             | `src/logging/` (`LOG_FORMAT`, `LOG_LEVEL`; `trace_id` / `span_id` when OTel span active)         |
+| Local testing vs real Telegram | `docs/local-telegram-testing.md`                                                                 |
+| Deploy / Helm / kind           | `deploy/README.md`, `deploy/helm/szerencsejatek-telegram-bot/README.md`, `deploy/kind/README.md` |
+| Phasing & risks                | `docs/design-plan.md`                                                                            |
+| Deno / TS conventions          | `.cursor/rules/`                                                                                 |
+| Domain + workflows             | `.cursor/skills/szerencsejatek-telegram-bot/SKILL.md`                                            |
 
 ## Result pipeline (Ötöslottó)
 

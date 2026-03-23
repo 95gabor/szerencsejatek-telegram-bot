@@ -11,14 +11,28 @@ fullnameOverride: szerencsejatek-bot
 service:
   port: 8080
 
-# --- Workload: Knative Service (scale-to-zero, recommended with Kourier/ingress) or plain Deployment
+# --- Workload: Knative Service (optional) or plain Deployment (default)
 knative:
-  enabled: true
+  enabled: false
   containerConcurrency: 10
   # imagePullPolicy Never is for local kind; use IfNotPresent for real registries
   imagePullPolicy: ""
 
-# Plain Kubernetes Deployment + Service (set knative.enabled: false)
+# When knative.enabled is false:
+# - longPolling: telegram_bot (long poll) + server (ClusterIP only); CronJob posts draw update hourly
+# - httpServer: single server.ts (webhook / CloudEvents; enable ingress below if you need external HTTP)
+workload:
+  mode: longPolling
+
+cronjob:
+  enabled: true
+  # Every hour at minute 0 (UTC). Override for your timezone or frequency.
+  schedule: "0 * * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 3
+  suspend: false
+
 deployment:
   replicas: 1
   resources: {}
@@ -26,7 +40,7 @@ deployment:
   # tolerations: []
   # affinity: {}
 
-# Optional Ingress (only when knative.enabled: false — for Knative, use your cluster ingress / Kourier)
+# External HTTP is off by default (ClusterIP Service only). Enable for public webhook / HTTP ingress.
 ingress:
   enabled: false
   className: ""
@@ -58,7 +72,7 @@ config:
   otoslottoResultJsonUrl: ""
   otel:
     serviceName: szerencsejatek-telegram-bot
-    serviceVersion: "0.1.0"
+    serviceVersion: "0.2.0"
     exporterOtlpEndpoint: ""
 
 # Telegram Bot API token — prefer existing Secret

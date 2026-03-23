@@ -28,6 +28,9 @@ entry that parses **structured** and **binary** CloudEvents reliably.
   (`src/adapters/http/cloudevents_request.ts`).
 - Document **Knative Serving** + optional **Eventing** (Broker, Trigger) under `deploy/` with
   **kind** instructions.
+- **Helm** packages the same **`POST /`** handler: default **`workload.mode: longPolling`** exposes
+  **`server.ts`** on **ClusterIP** only; a **CronJob** POSTs the same CloudEvent shape hourly (see
+  `deploy/helm/szerencsejatek-telegram-bot/`).
 
 ## Dependencies
 

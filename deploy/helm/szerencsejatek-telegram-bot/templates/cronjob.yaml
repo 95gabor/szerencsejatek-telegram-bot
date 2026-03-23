@@ -1,0 +1,43 @@
+{{- if and (not .Values.knative.enabled) (eq .Values.workload.mode "longPolling") .Values.cronjob.enabled }}
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ include "szerencsejatek-telegram-bot.fullname" . }}-draw-update
+  labels:
+    {{- include "szerencsejatek-telegram-bot.labels" . | nindent 4 }}
+spec:
+  schedule: {{ .Values.cronjob.schedule | quote }}
+  concurrencyPolicy: {{ .Values.cronjob.concurrencyPolicy | quote }}
+  successfulJobsHistoryLimit: {{ .Values.cronjob.successfulJobsHistoryLimit }}
+  failedJobsHistoryLimit: {{ .Values.cronjob.failedJobsHistoryLimit }}
+  suspend: {{ .Values.cronjob.suspend }}
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            app.kubernetes.io/name: {{ include "szerencsejatek-telegram-bot.name" . }}-draw-cron
+            app.kubernetes.io/instance: {{ .Release.Name }}
+            app.kubernetes.io/component: batch
+            app.kubernetes.io/managed-by: {{ .Release.Service }}
+        spec:
+          restartPolicy: OnFailure
+          containers:
+            - name: trigger
+              image: {{ printf "%s:%s" .Values.image.repository .Values.image.tag | quote }}
+              imagePullPolicy: {{ .Values.image.pullPolicy }}
+              command:
+                - deno
+                - run
+                - --allow-net
+                - --allow-env
+                - --allow-read
+                - scripts/check_draw_result.ts
+              env:
+                - name: PIPELINE_BASE_URL
+                  value: http://{{ include "szerencsejatek-telegram-bot.fullname" . }}.{{ .Release.Namespace }}.svc.cluster.local:{{ .Values.service.port }}
+                - name: GAME_ID
+                  value: {{ .Values.config.gameId | quote }}
+                - name: PORT
+                  value: {{ .Values.service.port | quote }}
+{{- end }}

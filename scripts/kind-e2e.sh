@@ -73,6 +73,8 @@ helm install "$HELM_RELEASE" "$ROOT/deploy/helm/szerencsejatek-telegram-bot" \
   --wait \
   --timeout 5m \
   --set knative.enabled=false \
+  --set workload.mode=httpServer \
+  --set cronjob.enabled=false \
   --set image.repository="$E2E_IMAGE_REPO" \
   --set image.tag="$E2E_IMAGE_TAG" \
   --set image.pullPolicy=Never

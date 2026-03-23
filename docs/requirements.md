@@ -119,14 +119,14 @@ The pipeline supports **manual** or **fetcher-driven** paths into `draw.result.p
 
 ## 8. Product decisions (locked vs open)
 
-| Topic                 | Decision                                                                                                  |
-| --------------------- | --------------------------------------------------------------------------------------------------------- |
-| First game            | **Ötöslottó**                                                                                             |
-| Notifications         | **One message per draw per user** (one `user.notification.requested` per subscriber).                     |
-| Storage               | **SQLite** on server via **Drizzle** + **libSQL** (file DB; path via env).                                |
-| User-facing language  | **Hungarian** for v1 (`NFR-4`).                                                                           |
-| Results source (prod) | **Ötöslottó:** `BetHuOtoslottoFetcher` + `OTOSLOTTO_RESULT_JSON_URL` (default: bet.hu PublicInfo LOTTO5). |
-| Hosting (prod)        | **Open** — VPS, Deno Deploy, or **Kubernetes / Knative** container; affects webhook vs polling.           |
+| Topic                 | Decision                                                                                                                           |
+| --------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| First game            | **Ötöslottó**                                                                                                                      |
+| Notifications         | **One message per draw per user** (one `user.notification.requested` per subscriber).                                              |
+| Storage               | **SQLite** on server via **Drizzle** + **libSQL** (file DB; path via env).                                                         |
+| User-facing language  | **Hungarian** for v1 (`NFR-4`).                                                                                                    |
+| Results source (prod) | **Ötöslottó:** `BetHuOtoslottoFetcher` + `OTOSLOTTO_RESULT_JSON_URL` (default: bet.hu PublicInfo LOTTO5).                          |
+| Hosting (prod)        | **Open** — VPS, Deno Deploy, or **Kubernetes** (Helm default: long polling + internal HTTP + CronJob; optional webhook / Knative). |
 
 ## 9. Traceability (requirements → code)
 
@@ -144,8 +144,9 @@ The pipeline supports **manual** or **fetcher-driven** paths into `draw.result.p
 
 ## 10. Telegram UX (v1)
 
-- **Transport:** long polling (`src/telegram_bot.ts`) or webhook (`src/server.ts`); see
-  `docs/local-telegram-testing.md`.
+- **Transport:** long polling (`src/telegram_bot.ts`), webhook (`src/server.ts`), or **Helm**
+  **longPolling** mode (both in one Pod); see `docs/local-telegram-testing.md` and
+  `deploy/helm/szerencsejatek-telegram-bot/README.md`.
 - **Replies:** HTML (`parse_mode: "HTML"`); lists and bold for structure; **numbers** in `<code>`,
   **not** slash-commands (see FR-5).
 - **`/result`:** last row in `draws` for `GAME_ID` by `created_at` — informational only until a
@@ -159,5 +160,5 @@ The pipeline supports **manual** or **fetcher-driven** paths into `draw.result.p
 
 ---
 
-_Last updated: requirements traceability, Telegram/HTML/i18n rules, NFR-5 config; align with
-pipeline and `docs/adr/`._
+_Last updated: hosting / transport aligned with Helm defaults (long polling, CronJob, ClusterIP);
+requirements traceability, Telegram/HTML/i18n, NFR-5; align with pipeline and `docs/adr/`._
