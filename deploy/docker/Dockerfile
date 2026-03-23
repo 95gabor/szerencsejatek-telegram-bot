@@ -12,4 +12,4 @@ RUN deno cache --lock=deno.lock src/server.ts src/telegram_bot.ts scripts/check_
 ENV PORT=8080
 EXPOSE 8080
 
-CMD ["deno", "run", "--allow-net", "--allow-env", "--allow-read", "--allow-write", "--allow-ffi", "src/server.ts"]
+CMD ["deno", "run", "--allow-net", "--allow-env", "--allow-read", "--allow-write", "--allow-ffi", "--allow-sys", "src/server.ts"]

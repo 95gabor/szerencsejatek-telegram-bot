@@ -10,17 +10,19 @@ and when **official results** are available the bot **notifies** them with the w
 
 ## Documentation
 
-| Document                                                                                               | Purpose                                                                        |
-| ------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------ |
-| [docs/requirements.md](docs/requirements.md)                                                           | Functional/non-functional requirements and **open questions**                  |
-| [docs/architecture.md](docs/architecture.md)                                                           | **HLD** (§1), components, pipeline, tech stack, deployment modes               |
-| [deploy/README.md](deploy/README.md)                                                                   | **Deploy** index (Helm, kind, Dockerfile)                                      |
-| [deploy/helm/szerencsejatek-telegram-bot/README.md](deploy/helm/szerencsejatek-telegram-bot/README.md) | **Helm** — long polling + CronJob by default, optional webhook / Knative       |
-| [deploy/kind/README.md](deploy/kind/README.md)                                                         | **kind** + **Knative** manual install (Serving, Eventing, CloudEvents)         |
-| [docs/design-plan.md](docs/design-plan.md)                                                             | Phased delivery and risks                                                      |
-| [docs/adr/README.md](docs/adr/README.md)                                                               | Architecture decision records (ADRs)                                           |
-| [docs/local-telegram-testing.md](docs/local-telegram-testing.md)                                       | **Local dev with a real Telegram bot** (long polling, optional webhook tunnel) |
-| [AGENTS.md](AGENTS.md)                                                                                 | Short agent / contributor context                                              |
+| Document                                                                                               | Purpose                                                                                       |
+| ------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------- |
+| [docs/requirements.md](docs/requirements.md)                                                           | Functional/non-functional requirements and **open questions**                                 |
+| [docs/architecture.md](docs/architecture.md)                                                           | **HLD** (§1), components, pipeline, tech stack, deployment modes                              |
+| [deploy/README.md](deploy/README.md)                                                                   | **Deploy** index (Helm, kind, Dockerfile)                                                     |
+| [deploy/helm/szerencsejatek-telegram-bot/README.md](deploy/helm/szerencsejatek-telegram-bot/README.md) | **Helm** — long polling + CronJob by default, optional webhook / Knative                      |
+| [deploy/kind/README.md](deploy/kind/README.md)                                                         | **kind**: CI e2e smoke, **local Telegram** (`kind-telegram-local.sh`), Knative manual install |
+| [docs/design-plan.md](docs/design-plan.md)                                                             | Phased delivery and risks                                                                     |
+| [docs/adr/README.md](docs/adr/README.md)                                                               | Architecture decision records (ADRs)                                                          |
+| [docs/local-telegram-testing.md](docs/local-telegram-testing.md)                                       | **Local dev with a real Telegram bot** (long polling, optional webhook tunnel)                |
+| [AGENTS.md](AGENTS.md)                                                                                 | Short agent / contributor context                                                             |
+| [CONTRIBUTING.md](CONTRIBUTING.md)                                                                     | **Contributing** — PRs, checks, review; maintainer branch-protection notes                    |
+| [SECURITY.md](SECURITY.md)                                                                             | **Security** — reporting vulnerabilities responsibly                                          |
 
 ## AI-assisted development (Cursor)
 
@@ -70,6 +72,14 @@ Needs Docker, `kind`, `kubectl`, Helm, and outbound HTTPS for Knative CRD URLs. 
 chart with **`workload.mode=httpServer`** (single `server.ts` pod; no `BOT_TOKEN` required for
 smoke). Deno-only wrapper: `E2E_KIND=1 deno task test:integration`.
 
+### Optional: kind + real Telegram (long polling)
+
+To run the bot **in a local kind cluster** with **`BOT_TOKEN` from `.env`** (outbound HTTPS to
+Telegram; no public URL needed), use **`deno task kind:telegram`**
+(`scripts/kind-telegram-local.sh`). The cluster is **not** deleted when the script exits. Details
+and env vars (**`CRONJOB_ENABLED`**, etc.):
+[deploy/kind/README.md](deploy/kind/README.md#local-telegram-testing-in-kind).
+
 ### Local HTTP server (`deno task dev`)
 
 CloudEvents `POST /`, Telegram webhook `POST …/telegram/webhook` when `BOT_TOKEN` is set, health
@@ -86,8 +96,9 @@ startup. Default webhook path: **`/telegram/webhook`** (`TELEGRAM_WEBHOOK_PATH`)
 ### Production (Helm)
 
 Default chart values: **`workload.mode: longPolling`** — **`telegram_bot.ts`** (long polling) +
-**`server.ts`** on **ClusterIP** only (**`ingress.enabled: false`**); **CronJob** hourly
-(`scripts/check_draw_result.ts`). See
+**`server.ts`** on **ClusterIP** only (**`ingress.enabled: false`**); optional **CronJob** (default
+on) posts **`scripts/check_draw_result.ts`** to **`server.ts`** on a schedule — also available for
+**`httpServer`** and **`knative.enabled: true`** when **`cronjob.enabled`**. See
 [deploy/helm/szerencsejatek-telegram-bot/README.md](deploy/helm/szerencsejatek-telegram-bot/README.md)
 and [deploy/README.md](deploy/README.md). For public webhook or Knative, use **`httpServer`** or
 **`knative.enabled: true`** and set **`config.webhookUrl`** / ingress as documented there.

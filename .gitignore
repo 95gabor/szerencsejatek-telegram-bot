@@ -1,6 +1,14 @@
+# Local secrets — never commit
 .env
+.env.*
+!.env.example
+*.pem
+*.key
+id_rsa
 *.sqlite
 *.db
+# Local SQLite / runtime data (see DATABASE_URL in .env.example)
+data/
 .DS_Store
 coverage/
 node_modules/

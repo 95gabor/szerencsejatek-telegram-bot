@@ -6,8 +6,11 @@ Deploys the app as either:
   **`telegram_bot.ts`** (long polling) + **`server.ts`** (internal HTTP for CloudEvents only,
   **ClusterIP**); **CronJob** triggers draw checks hourly (`cronjob.schedule`, default `0 * * * *`).
 - **`workload.mode: httpServer`:** single **`server.ts`** Deployment (webhook / CloudEvents); add
-  **`ingress`** if you need public HTTP.
-- **`knative.enabled: true`:** Knative Service — scale-to-zero, webhook + CloudEvents `POST /`
+  **`ingress`** if you need public HTTP. **CronJob** (optional, `cronjob.enabled`) can trigger draw
+  checks the same way as in long polling.
+- **`knative.enabled: true`:** Knative Service — scale-to-zero, webhook + CloudEvents `POST /`.
+  Optional **CronJob** (`cronjob.enabled`) POSTs draw checks to the same in-cluster Service name as
+  the Knative Service.
 
 ## Prerequisites
 
@@ -71,7 +74,7 @@ Use the **same semver** for `--version` and `image.tag` as the release you insta
 | --------------------- | ----------------------------------------------------------------------------------------------------- |
 | Image                 | `image.repository`, `image.tag`, `image.pullPolicy`                                                   |
 | Workload              | `knative.enabled`, `workload.mode` (`longPolling` \| `httpServer`), `deployment.*`                    |
-| CronJob               | `cronjob.enabled`, `cronjob.schedule`, `cronjob.suspend` (only when `workload.mode: longPolling`)     |
+| CronJob               | `cronjob.enabled`, `cronjob.schedule`, `cronjob.suspend` (POSTs to in-cluster `server.ts` URL)        |
 | Telegram              | `telegram.existingSecret`, `telegram.botToken`, `config.webhookUrl`, `telegramWebhook.existingSecret` |
 | App                   | `config.gameId`, `config.logFormat`, `config.otel.*`, `config.otoslottoResultJsonUrl`                 |
 | Storage               | `persistence.enabled`, `persistence.size`, `persistence.storageClass`                                 |

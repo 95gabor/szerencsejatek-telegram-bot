@@ -40,6 +40,7 @@ spec:
             - --allow-read
             - --allow-write
             - --allow-ffi
+            - --allow-sys
             - src/telegram_bot.ts
           env:
             {{- include "szerencsejatek-telegram-bot.env" . | nindent 12 }}
@@ -60,6 +61,7 @@ spec:
             - --allow-read
             - --allow-write
             - --allow-ffi
+            - --allow-sys
             - src/server.ts
           ports:
             - name: http

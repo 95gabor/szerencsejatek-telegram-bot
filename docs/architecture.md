@@ -256,7 +256,7 @@ docs/
   adr/                       # architecture decision records (index: adr/README.md)
 deploy/
   docker/                    # Dockerfile
-  helm/szerencsejatek-telegram-bot/  # Helm: default longPolling + CronJob; optional httpServer / Knative
+  helm/szerencsejatek-telegram-bot/  # Helm: longPolling | httpServer | Knative; optional CronJob (draw checks)
   knative/                   # Service, optional Broker/Trigger samples (reference YAML)
 ```
 

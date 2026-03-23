@@ -53,6 +53,40 @@ E2E_KIND=1 deno task test:integration
 CI: [`.github/workflows/e2e-kind.yml`](../../.github/workflows/e2e-kind.yml) runs
 `deno task test:e2e`.
 
+## Local Telegram testing in kind
+
+Use this when you want a **persistent** kind cluster and to **message the bot in Telegram** (long
+polling from inside the cluster — no ingress or tunnel required).
+
+**Requirements:** same tooling as e2e (`bash`, `kind`, `kubectl`, Helm 3, Docker), plus
+**`BOT_TOKEN`** in the repo root **`.env`**.
+
+```bash
+deno task kind:telegram
+```
+
+Equivalent: `bash scripts/kind-telegram-local.sh`. The script **sources `.env`**, builds the image,
+loads it into kind, and **`helm upgrade --install`** with **`workload.mode=longPolling`** and
+**`telegram.botToken`** from your token (via a temp file — the token is not passed on the command
+line). The cluster name defaults to **`szerencsejatek-local`** and is **left running** when the
+script exits.
+
+**Logs:** `kubectl logs -f deployment/szerencsejatek-bot -n default -c telegram` (and `-c pipeline`
+for `server.ts`).
+
+**Hourly draw checks (CronJob):** the script sets **`CRONJOB_ENABLED=false`** by default so local
+testing is quiet. To install the chart CronJob as well, run:
+
+```bash
+CRONJOB_ENABLED=true deno task kind:telegram
+```
+
+**Cleanup:** `bash scripts/kind-telegram-local.sh --teardown` (or
+`kind delete cluster --name szerencsejatek-local`).
+
+See also [docs/local-telegram-testing.md](../../docs/local-telegram-testing.md) for **local shell**
+long polling (`deno task bot`) and webhook tunnel notes.
+
 ## 1. Create a kind cluster
 
 ```bash
