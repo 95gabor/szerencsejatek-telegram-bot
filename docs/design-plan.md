@@ -42,6 +42,8 @@ Telegram or test double).
 - [ ] Additional games with separate rule modules.
 - [ ] Optional prize-tier mapping where rules are codified.
 - [ ] User preferences (which games to follow).
+- [ ] Ticket validity window preferences: user can choose single draw, fixed multi-week (e.g. 5
+      weeks), custom N weeks, or continuous participation until stopped.
 
 ## Risks
 

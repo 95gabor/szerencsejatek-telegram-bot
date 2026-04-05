@@ -31,6 +31,9 @@ number of hits, optional prize tier in later phases).
 - Each **line** is a valid combination according to that game’s rules (ranges, count of picks,
   optional supplementary numbers).
 - The system rejects invalid input with a **clear Hungarian error message**.
+- **Future feature request (backlog):** users may choose line validity duration when registering
+  numbers, for example **single draw/week**, **N weeks** (e.g. **5 weeks**), or **continuous play**
+  until explicit removal/stop.
 
 **v1 (Ötöslottó) — implemented commands** (Hungarian copy; see §10):
 
@@ -162,6 +165,8 @@ The pipeline supports **manual** or **fetcher-driven** paths into `draw.result.p
 1. **Production results source** (§7): API vs manual vs scraping — owner, timeline, legal review.
 2. **FR-6** opt-out: exact commands (`/stop`?), retention, and GDPR wording.
 3. **Rate limits** and batching for large subscriber lists (see `docs/design-plan.md` risks).
+4. **Play duration UX and model** (FR-2 backlog): command syntax and defaults for one draw/week vs N
+   weeks (including “5 weeks”) vs continuous, and how renewals/expiry are shown in `/lines`.
 
 ---
 
