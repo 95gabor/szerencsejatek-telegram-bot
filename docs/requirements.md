@@ -43,6 +43,8 @@ number of hits, optional prize tier in later phases).
 | `/remove` | Remove line by index from `/lines`.                                            |
 | `/result` | Show **last persisted** draw result for this bot (from DB), not a live scrape. |
 
+For non-command free text messages, the bot replies with the same help content as `/help`.
+
 ### FR-3 — Draw results ingestion
 
 - The system obtains **official draw results** for supported games on a defined schedule or when
@@ -152,6 +154,8 @@ The pipeline supports **manual** or **fetcher-driven** paths into `draw.result.p
   **not** slash-commands (see FR-5).
 - **`/result`:** last row in `draws` for `GAME_ID` by `created_at` — informational only until a
   production ingestion strategy exists (§7).
+- **Non-command text:** replies with the `/help` content so users quickly recover to supported
+  command flows.
 
 ## 11. Open questions
 
