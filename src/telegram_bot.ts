@@ -6,11 +6,7 @@
  * Requires BOT_TOKEN and DATABASE_URL (default file:./data/app.db).
  */
 import { Bot } from "grammy";
-import { createAppDatabase } from "./adapters/persistence/drizzle/client.ts";
-import { DrizzleDrawRecordRepository } from "./adapters/persistence/drizzle/draw_record_repository.ts";
-import { DrizzlePlayedLineRepository } from "./adapters/persistence/drizzle/played_line_repository.ts";
-import { DrizzleUserRepository } from "./adapters/persistence/drizzle/user_repository.ts";
-import { ensureSchema } from "./adapters/persistence/drizzle/ensure_schema.ts";
+import { createPersistenceBundle } from "./adapters/persistence/drizzle/persistence_factory.ts";
 import { loadConfig } from "./config/env.ts";
 import { configureLogger, getLogger } from "./logging/mod.ts";
 import { initObservability } from "./observability/mod.ts";
@@ -32,11 +28,7 @@ if (!token) {
 }
 
 await Deno.mkdir("data", { recursive: true });
-await ensureSchema(config.DATABASE_URL);
-const db = createAppDatabase(config.DATABASE_URL);
-const users = new DrizzleUserRepository(db);
-const lines = new DrizzlePlayedLineRepository(db);
-const draws = new DrizzleDrawRecordRepository(db);
+const { users, lines, draws } = await createPersistenceBundle(config.DATABASE_URL);
 
 const bot = new Bot(token);
 registerTelegramHandlers(bot, {

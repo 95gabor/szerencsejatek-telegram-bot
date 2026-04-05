@@ -4,11 +4,7 @@ import { cloudEventFromHttpRequest } from "./adapters/http/cloudevents_request.t
 import { NoopOutboundNotifier } from "./adapters/notify/noop_notifier.ts";
 import { TelegramOutboundNotifier } from "./adapters/notify/telegram_notifier.ts";
 import { BetHuOtoslottoFetcher } from "./adapters/ingestion/bet_hu_otoslotto_fetcher.ts";
-import { createAppDatabase } from "./adapters/persistence/drizzle/client.ts";
-import { DrizzleDrawRecordRepository } from "./adapters/persistence/drizzle/draw_record_repository.ts";
-import { DrizzlePlayedLineRepository } from "./adapters/persistence/drizzle/played_line_repository.ts";
-import { DrizzleUserRepository } from "./adapters/persistence/drizzle/user_repository.ts";
-import { ensureSchema } from "./adapters/persistence/drizzle/ensure_schema.ts";
+import { createPersistenceBundle } from "./adapters/persistence/drizzle/persistence_factory.ts";
 import { createPipelineEmitter, dispatchPipelineEvent } from "./application/dispatch.ts";
 import { loadConfig } from "./config/env.ts";
 import { createCloudEvent } from "./events/cloudevents.ts";
@@ -50,10 +46,7 @@ const locale = config.DEFAULT_LOCALE;
 const TELEGRAM_INIT_RETRY_DELAYS_MS = [1000, 2000, 5000, 10000, 30000];
 
 await Deno.mkdir("data", { recursive: true });
-await ensureSchema(databaseUrl);
-const db = createAppDatabase(databaseUrl);
-const draws = new DrizzleDrawRecordRepository(db);
-const lines = new DrizzlePlayedLineRepository(db);
+const { users, lines, draws } = await createPersistenceBundle(databaseUrl);
 const fetcher = new BetHuOtoslottoFetcher({ url: config.OTOSLOTTO_RESULT_JSON_URL });
 
 const notifierState: { delegate: OutboundNotifier | null } = {
@@ -82,7 +75,6 @@ async function initializeTelegramRuntime(): Promise<void> {
   if (!botToken) {
     return;
   }
-  const users = new DrizzleUserRepository(db);
   const bot = new Bot(botToken);
   registerTelegramHandlers(bot, { users, lines, draws, gameId, locale });
   bot.catch((err) => {

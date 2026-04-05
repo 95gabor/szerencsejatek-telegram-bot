@@ -7,15 +7,15 @@ why the chosen approach won.
 
 ## Index
 
-| ADR                                           | Title                                                    |
-| --------------------------------------------- | -------------------------------------------------------- |
-| [0001](0001-cloud-events-pipeline.md)         | CloudEvents-shaped internal pipeline for draw processing |
-| [0002](0002-drizzle-libsql-sqlite.md)         | Persistence with Drizzle ORM and libSQL (SQLite file)    |
-| [0003](0003-http-cloudevents-knative.md)      | Inbound HTTP CloudEvents (`cloudevents` SDK) and Knative |
-| [0004](0004-documentation-and-adrs.md)        | Keep docs and ADRs in sync with code                     |
-| [0005](0005-telegram-grammy.md)               | Telegram Bot API client (**grammY**)                     |
-| [0006](0006-zod-config-and-i18n.md)           | Env validation (**Zod**) and **i18n** (`t()`, locales)   |
-| [0007](0007-opentelemetry-metrics-tracing.md) | **OpenTelemetry** metrics and tracing (OTLP/HTTP)        |
+| ADR                                           | Title                                                     |
+| --------------------------------------------- | --------------------------------------------------------- |
+| [0001](0001-cloud-events-pipeline.md)         | CloudEvents-shaped internal pipeline for draw processing  |
+| [0002](0002-drizzle-libsql-sqlite.md)         | Persistence with Drizzle ORM (libSQL/SQLite + PostgreSQL) |
+| [0003](0003-http-cloudevents-knative.md)      | Inbound HTTP CloudEvents (`cloudevents` SDK) and Knative  |
+| [0004](0004-documentation-and-adrs.md)        | Keep docs and ADRs in sync with code                      |
+| [0005](0005-telegram-grammy.md)               | Telegram Bot API client (**grammY**)                      |
+| [0006](0006-zod-config-and-i18n.md)           | Env validation (**Zod**) and **i18n** (`t()`, locales)    |
+| [0007](0007-opentelemetry-metrics-tracing.md) | **OpenTelemetry** metrics and tracing (OTLP/HTTP)         |
 
 ## Dependency inventory
 
@@ -25,7 +25,7 @@ Third-party packages **pinned in `deno.json` / source** are recorded per ADR (ve
 | ADR                                                        | Packages                                                                                                                                                                                                                           |
 | ---------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | [0001](0001-cloud-events-pipeline.md#dependencies)         | In-process pipeline: **none**; defers wire parsing to 0003.                                                                                                                                                                        |
-| [0002](0002-drizzle-libsql-sqlite.md#dependencies)         | `drizzle-orm@0.45.1`, `@libsql/client@0.14.0`                                                                                                                                                                                      |
+| [0002](0002-drizzle-libsql-sqlite.md#dependencies)         | `drizzle-orm@0.45.1`, `@libsql/client@0.14.0`, `postgres@3.4.8`                                                                                                                                                                    |
 | [0003](0003-http-cloudevents-knative.md#dependencies)      | `cloudevents@10.0.0`                                                                                                                                                                                                               |
 | [0005](0005-telegram-grammy.md#dependencies)               | `grammy@1.38.4`                                                                                                                                                                                                                    |
 | [0006](0006-zod-config-and-i18n.md#dependencies)           | `@std/dotenv@0.225.6`, `zod@3.24.2`                                                                                                                                                                                                |

@@ -1,4 +1,4 @@
-# ADR 0002: Drizzle ORM with libSQL (SQLite file)
+# ADR 0002: Drizzle ORM persistence (libSQL/SQLite and PostgreSQL)
 
 ## Status
 
@@ -25,18 +25,26 @@ integration is a documented path for this deployment (file DB now, remote libSQL
 
 ## Decision
 
-Use **Drizzle ORM** with the **libSQL** driver (`@libsql/client` **node** entry for `file:` SQLite),
-`drizzle-orm` **libsql** session, and schema in `src/adapters/persistence/drizzle/schema.ts`.
-Idempotent draw insert uses `INSERT ... ON CONFLICT DO NOTHING` with `RETURNING` to avoid races.
+Use **Drizzle ORM** as the shared persistence/query layer, with runtime backend selected from
+`DATABASE_URL`:
+
+- `file:`, `libsql:`, `https:`, `wss:` -> libSQL adapter (`@libsql/client`) and schema in
+  `src/adapters/persistence/drizzle/schema.ts`
+- `postgres://`, `postgresql://` -> PostgreSQL adapter (`postgres` + Drizzle `postgres-js`) and
+  schema in `src/adapters/persistence/drizzle_postgres/schema.ts`
+
+`server.ts` and `telegram_bot.ts` use one persistence factory that picks backend from URL scheme.
+Idempotent draw insert continues to use `INSERT ... ON CONFLICT DO NOTHING` with `RETURNING`.
 
 ## Dependencies
 
 Pinned in source imports (see also `deno.lock`):
 
-| Package              | Version                  | Role                                                                                        |
-| -------------------- | ------------------------ | ------------------------------------------------------------------------------------------- |
-| `npm:drizzle-orm`    | `0.45.1`                 | Schema (`sqlite-core`), query builder, `libsql` session (`npm:drizzle-orm@0.45.1/libsql`).  |
-| `npm:@libsql/client` | `0.14.0` (`/node` entry) | libSQL client for SQLite `file:` URLs (`createClient` in `client.ts` / `ensure_schema.ts`). |
+| Package              | Version                  | Role                                                                                          |
+| -------------------- | ------------------------ | --------------------------------------------------------------------------------------------- |
+| `npm:drizzle-orm`    | `0.45.1`                 | Schema + query builder for both adapters (`libsql`, `postgres-js`, `sqlite-core`, `pg-core`). |
+| `npm:@libsql/client` | `0.14.0` (`/node` entry) | libSQL client for SQLite `file:` URLs (`createClient` in `client.ts` / `ensure_schema.ts`).   |
+| `npm:postgres`       | `3.4.8`                  | PostgreSQL client used by Drizzle `postgres-js` adapter and schema bootstrap SQL.             |
 
 ## Review
 
@@ -47,7 +55,8 @@ Pinned in source imports (see also `deno.lock`):
 
 ## Consequences
 
-- **Positive**: Typed queries, schema as code, path to Turso/libSQL remote URLs later.
-- **Negative**: **FFI/native** dependency in Deno (`--allow-ffi`); Docker image must include the
-  stack.
+- **Positive**: Typed queries with one domain/repository surface across SQLite/libSQL and PostgreSQL
+  hosting.
+- **Negative**: Two schema definitions are maintained (libSQL + PostgreSQL flavors of the same
+  tables).
 - **Follow-up**: Formal `drizzle-kit` migrations in CI if schema churn increases.

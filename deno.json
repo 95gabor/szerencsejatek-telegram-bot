@@ -15,6 +15,7 @@
     "@std/dotenv": "jsr:@std/dotenv@0.225.6",
     "cloudevents": "npm:cloudevents@10.0.0",
     "grammy": "npm:grammy@1.38.4",
+    "postgres": "npm:postgres@3.4.8",
     "zod": "npm:zod@3.24.2"
   },
   "tasks": {
