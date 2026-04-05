@@ -6,11 +6,13 @@ import {
 import { getLogger } from "../../logging/mod.ts";
 import type { DrawResultFetcher } from "../../ports/draw_result_fetcher.ts";
 
-/** Public JSON feed used by bet.szerencsejatek.hu “lottószámok” (Ötöslottó = LOTTO5, latest draw). */
-export const DEFAULT_OTOSLOTTO_RESULT_JSON_URL =
-  "https://bet.szerencsejatek.hu/PublicInfo/ResultJSON.aspx?game=LOTTO5&query=last";
+/** Public Ötöslottó history table feed used as default source. */
+export const DEFAULT_OTOSLOTTO_RESULT_JSON_URL = "https://bet.szerencsejatek.hu/cmsfiles/otos.html";
+// Legacy endpoint kept for quick rollback/testing:
+// https://bet.szerencsejatek.hu/PublicInfo/ResultJSON.aspx?game=LOTTO5&query=last
 
-const RESULT_SOURCE_LABEL = "bet.szerencsejatek.hu PublicInfo ResultJSON (LOTTO5&query=last)";
+const RESULT_SOURCE_LABEL_JSON = "bet.szerencsejatek.hu PublicInfo ResultJSON (LOTTO5&query=last)";
+const RESULT_SOURCE_LABEL_HTML = "bet.szerencsejatek.hu cmsfiles/otos.html";
 
 function isRecord(v: unknown): v is Record<string, unknown> {
   return v !== null && typeof v === "object" && !Array.isArray(v);
@@ -56,6 +58,47 @@ export function parseBetHuLottery5LastDraw(
   return { drawKey, winningNumbers };
 }
 
+function normalizeHtmlCellText(v: string): string {
+  return v
+    .replace(/<[^>]*>/g, " ")
+    .replaceAll("&nbsp;", " ")
+    .replaceAll("&#160;", " ")
+    .replaceAll("&amp;", "&")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+/**
+ * Parses latest draw from `cmsfiles/otos.html` (first data row in descending history table).
+ */
+export function parseBetHuOtoslottoLatestFromHtml(
+  html: string,
+): { drawKey: string; winningNumbers: number[] } | null {
+  const rowRegex = /<tr[^>]*>([\s\S]*?)<\/tr>/gi;
+  for (const rowMatch of html.matchAll(rowRegex)) {
+    const rowHtml = rowMatch[1] ?? "";
+    const cells = [...rowHtml.matchAll(/<td[^>]*>([\s\S]*?)<\/td>/gi)]
+      .map((m) => normalizeHtmlCellText(m[1] ?? ""));
+    if (cells.length < 16) {
+      continue;
+    }
+    const year = Number.parseInt(cells[0] ?? "", 10);
+    const week = Number.parseInt(cells[1] ?? "", 10);
+    if (!Number.isInteger(year) || !Number.isInteger(week) || week < 1 || week > 53) {
+      continue;
+    }
+    const winningNumbers = cells.slice(-5).map((cell) => Number.parseInt(cell, 10));
+    if (winningNumbers.length !== 5 || winningNumbers.some((n) => !Number.isInteger(n))) {
+      continue;
+    }
+    return {
+      drawKey: `${year}-${String(week).padStart(2, "0")}`,
+      winningNumbers,
+    };
+  }
+  return null;
+}
+
 export type BetHuOtoslottoFetcherOptions = {
   url: string;
   /** Injected for tests. */
@@ -63,7 +106,7 @@ export type BetHuOtoslottoFetcherOptions = {
 };
 
 /**
- * Fetches latest Ötöslottó (LOTTO5) draw from the operator’s public JSON endpoint.
+ * Fetches latest Ötöslottó draw from operator public feeds.
  */
 export class BetHuOtoslottoFetcher implements DrawResultFetcher {
   private readonly url: string;
@@ -101,23 +144,42 @@ export class BetHuOtoslottoFetcher implements DrawResultFetcher {
       log.warn("ingestion.otoslotto.http_error", {
         status: res.status,
         statusText: res.statusText,
+        responseUrl: res.url,
       });
       return null;
     }
 
-    let json: unknown;
+    let body: string;
     try {
-      json = await res.json();
+      body = await res.text();
     } catch (e) {
-      log.warn("ingestion.otoslotto.json_parse_failed", {
+      log.warn("ingestion.otoslotto.read_body_failed", {
         error: e instanceof Error ? e.message : String(e),
       });
       return null;
     }
 
-    const parsed = parseBetHuLottery5LastDraw(json);
+    const contentType = res.headers.get("content-type") ?? "";
+    let parsed: { drawKey: string; winningNumbers: number[] } | null = null;
+    let resultSource = RESULT_SOURCE_LABEL_HTML;
+    if (contentType.includes("json")) {
+      try {
+        const json = JSON.parse(body) as unknown;
+        parsed = parseBetHuLottery5LastDraw(json);
+        resultSource = RESULT_SOURCE_LABEL_JSON;
+      } catch {
+        parsed = null;
+      }
+    }
     if (!parsed) {
-      log.warn("ingestion.otoslotto.unexpected_shape", {});
+      parsed = parseBetHuOtoslottoLatestFromHtml(body);
+      resultSource = RESULT_SOURCE_LABEL_HTML;
+    }
+    if (!parsed) {
+      log.warn("ingestion.otoslotto.unexpected_shape", {
+        contentType,
+        responseUrl: res.url,
+      });
       return null;
     }
 
@@ -135,7 +197,7 @@ export class BetHuOtoslottoFetcher implements DrawResultFetcher {
     return {
       drawKey: parsed.drawKey,
       winningNumbers,
-      resultSource: RESULT_SOURCE_LABEL,
+      resultSource,
     };
   }
 }

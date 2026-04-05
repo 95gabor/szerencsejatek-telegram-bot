@@ -23,9 +23,13 @@ export type TelegramBotDeps = {
 function commandArgs(text: string): string[] {
   const parts = text.trim().split(/\s+/).filter((p) => p.length > 0);
   if (parts.length === 0) return [];
-  const first = parts[0];
-  if (!first?.startsWith("/")) return [];
+  if (!isTelegramCommandText(text)) return [];
   return parts.slice(1);
+}
+
+export function isTelegramCommandText(text: string): boolean {
+  const firstToken = text.trim().split(/\s+/, 1)[0] ?? "";
+  return firstToken.startsWith("/");
 }
 
 export function registerTelegramHandlers(bot: Bot, deps: TelegramBotDeps): void {
@@ -177,5 +181,15 @@ export function registerTelegramHandlers(bot: Bot, deps: TelegramBotDeps): void 
     } else {
       await replyHtml(ctx, t(locale, "telegram.remove_failed"));
     }
+  });
+
+  bot.on("message:text", async (ctx) => {
+    const u = await ensureUser(ctx);
+    if (!u) return;
+    const text = ctx.message.text ?? "";
+    if (isTelegramCommandText(text)) {
+      return;
+    }
+    await replyHtml(ctx, t(locale, "telegram.help"));
   });
 }

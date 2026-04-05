@@ -1,5 +1,9 @@
 import { assertEquals } from "jsr:@std/assert@1/equals";
-import { BetHuOtoslottoFetcher, parseBetHuLottery5LastDraw } from "./bet_hu_otoslotto_fetcher.ts";
+import {
+  BetHuOtoslottoFetcher,
+  parseBetHuLottery5LastDraw,
+  parseBetHuOtoslottoLatestFromHtml,
+} from "./bet_hu_otoslotto_fetcher.ts";
 
 const sampleJson = {
   root: { Space: "", Local: "" },
@@ -26,6 +30,24 @@ const sampleJson = {
   ],
 };
 
+const sampleHtml = `
+<!DOCTYPE html>
+<html>
+<body>
+<table>
+  <tr>
+    <th>Év</th><th>Hét</th><th>Húzásdátum</th>
+  </tr>
+  <tr>
+    <td>2026</td><td>14</td><td>2026.04.04.</td>
+    <td>0</td><td>0 Ft</td><td>28</td><td>2 494 605 Ft</td><td>2563</td><td>29 850 Ft</td><td>85507</td><td>3 385 Ft</td>
+    <td>36</td><td>45</td><td>50</td><td>67</td><td>77</td>
+  </tr>
+</table>
+</body>
+</html>
+`;
+
 Deno.test("parseBetHuLottery5LastDraw extracts draw_id and five xml numbers", () => {
   const p = parseBetHuLottery5LastDraw(sampleJson);
   assertEquals(p?.drawKey, "36126");
@@ -35,6 +57,12 @@ Deno.test("parseBetHuLottery5LastDraw extracts draw_id and five xml numbers", ()
 Deno.test("parseBetHuLottery5LastDraw returns null for empty game list", () => {
   assertEquals(parseBetHuLottery5LastDraw({ game: [] }), null);
   assertEquals(parseBetHuLottery5LastDraw(null), null);
+});
+
+Deno.test("parseBetHuOtoslottoLatestFromHtml extracts latest row values", () => {
+  const p = parseBetHuOtoslottoLatestFromHtml(sampleHtml);
+  assertEquals(p?.drawKey, "2026-14");
+  assertEquals(p?.winningNumbers, [36, 45, 50, 67, 77]);
 });
 
 Deno.test("BetHuOtoslottoFetcher uses fetchImpl and returns validated tuple", async () => {
@@ -51,5 +79,22 @@ Deno.test("BetHuOtoslottoFetcher uses fetchImpl and returns validated tuple", as
   const r = await fetcher.fetchLatestOtoslottoDraw();
   assertEquals(r?.drawKey, "36126");
   assertEquals(r?.winningNumbers, [7, 18, 22, 52, 89]);
+  assertEquals(typeof r?.resultSource, "string");
+});
+
+Deno.test("BetHuOtoslottoFetcher falls back to html parser", async () => {
+  const fetcher = new BetHuOtoslottoFetcher({
+    url: "https://example.test/html",
+    fetchImpl: () =>
+      Promise.resolve(
+        new Response(sampleHtml, {
+          status: 200,
+          headers: { "content-type": "text/html" },
+        }),
+      ),
+  });
+  const r = await fetcher.fetchLatestOtoslottoDraw();
+  assertEquals(r?.drawKey, "2026-14");
+  assertEquals(r?.winningNumbers, [36, 45, 50, 67, 77]);
   assertEquals(typeof r?.resultSource, "string");
 });

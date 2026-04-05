@@ -31,6 +31,9 @@ number of hits, optional prize tier in later phases).
 - Each **line** is a valid combination according to that game’s rules (ranges, count of picks,
   optional supplementary numbers).
 - The system rejects invalid input with a **clear Hungarian error message**.
+- **Future feature request (backlog):** users may choose line validity duration when registering
+  numbers, for example **single draw/week**, **N weeks** (e.g. **5 weeks**), or **continuous play**
+  until explicit removal/stop.
 
 **v1 (Ötöslottó) — implemented commands** (Hungarian copy; see §10):
 
@@ -42,6 +45,8 @@ number of hits, optional prize tier in later phases).
 | `/lines`  | List stored lines (numbered for `/remove`).                                    |
 | `/remove` | Remove line by index from `/lines`.                                            |
 | `/result` | Show **last persisted** draw result for this bot (from DB), not a live scrape. |
+
+For non-command free text messages, the bot replies with the same help content as `/help`.
 
 ### FR-3 — Draw results ingestion
 
@@ -107,14 +112,13 @@ and requirements updates per game.
 
 ## 7. Data source for results
 
-**Implemented (Ötöslottó):** **`BetHuOtoslottoFetcher`** calls the operator’s public JSON endpoint
-(`bet.szerencsejatek.hu` **`PublicInfo/ResultJSON.aspx?game=LOTTO5&query=last`**), the same feed
-used by the official “lottószámok” UI. Override with **`OTOSLOTTO_RESULT_JSON_URL`** if the URL
-changes.
+**Implemented (Ötöslottó):** **`BetHuOtoslottoFetcher`** calls the operator’s public historical
+table endpoint (`bet.szerencsejatek.hu` **`cmsfiles/otos.html`**) and parses the newest row
+descending by draw date/week. Override with **`OTOSLOTTO_RESULT_JSON_URL`** if the URL changes.
 
 - **Option B** remains available: **manual** `draw.result.persist` or tooling (see pipeline).
-- **Option C** (arbitrary scraping) is **not** used — the fetcher uses the structured **public
-  JSON** feed only.
+- **Option C** (arbitrary scraping) is **not** used — the fetcher uses official operator-published
+  endpoints only.
 
 The pipeline supports **manual** or **fetcher-driven** paths into `draw.result.persist`; see
 `docs/architecture.md` §2.1.
@@ -127,7 +131,7 @@ The pipeline supports **manual** or **fetcher-driven** paths into `draw.result.p
 | Notifications         | **One message per draw per user** (one `user.notification.requested` per subscriber).                                                                                         |
 | Storage               | **Drizzle** persistence with backend selected by `DATABASE_URL`: **SQLite/libSQL** (`file:`, `libsql:`, `https:`, `wss:`) or **PostgreSQL** (`postgres://`, `postgresql://`). |
 | User-facing language  | **Hungarian** for v1 (`NFR-4`).                                                                                                                                               |
-| Results source (prod) | **Ötöslottó:** `BetHuOtoslottoFetcher` + `OTOSLOTTO_RESULT_JSON_URL` (default: bet.hu PublicInfo LOTTO5).                                                                     |
+| Results source (prod) | **Ötöslottó:** `BetHuOtoslottoFetcher` + `OTOSLOTTO_RESULT_JSON_URL` (default: bet.hu `cmsfiles/otos.html`).                                                                  |
 | Hosting (prod)        | **Open** — VPS, Deno Deploy, or **Kubernetes** (Helm default: long polling + internal HTTP + CronJob; optional webhook / Knative; optional in-process Deno Cron).             |
 
 ## 9. Traceability (requirements → code)
@@ -153,12 +157,16 @@ The pipeline supports **manual** or **fetcher-driven** paths into `draw.result.p
   **not** slash-commands (see FR-5).
 - **`/result`:** last row in `draws` for `GAME_ID` by `created_at` — informational only until a
   production ingestion strategy exists (§7).
+- **Non-command text:** replies with the `/help` content so users quickly recover to supported
+  command flows.
 
 ## 11. Open questions
 
 1. **Production results source** (§7): API vs manual vs scraping — owner, timeline, legal review.
 2. **FR-6** opt-out: exact commands (`/stop`?), retention, and GDPR wording.
 3. **Rate limits** and batching for large subscriber lists (see `docs/design-plan.md` risks).
+4. **Play duration UX and model** (FR-2 backlog): command syntax and defaults for one draw/week vs N
+   weeks (including “5 weeks”) vs continuous, and how renewals/expiry are shown in `/lines`.
 
 ---
 

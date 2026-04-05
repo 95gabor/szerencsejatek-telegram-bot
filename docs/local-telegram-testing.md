@@ -41,7 +41,8 @@ deno task bot:watch
 On startup the script **clears the webhook** (`deleteWebhook`) so Telegram sends updates to the
 long-polling client instead of an old HTTPS endpoint.
 
-**What to do in Telegram:** open a chat with your bot, send `/start`, then try e.g. `/help`,
+**What to do in Telegram:** open a chat with your bot (current public bot:
+[@SzerencsejatekChatBot](https://t.me/SzerencsejatekChatBot)), send `/start`, then try e.g. `/help`,
 `/add 1 2 3 4 5`, `/lines`, `/result` (last stored draw result, if the pipeline has already
 persisted one), `/remove 1` as documented in the bot’s help text.
 
