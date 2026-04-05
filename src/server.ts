@@ -41,6 +41,7 @@ const telegramBackgroundInit = config.TELEGRAM_BACKGROUND_INIT;
 const webhookPath = config.TELEGRAM_WEBHOOK_PATH;
 const webhookSecret = config.TELEGRAM_WEBHOOK_SECRET;
 const locale = config.DEFAULT_LOCALE;
+const TELEGRAM_INIT_RETRY_DELAYS_MS = [1000, 2000, 5000, 10000, 30000];
 
 await Deno.mkdir("data", { recursive: true });
 await ensureSchema(databaseUrl);
@@ -61,6 +62,15 @@ const notifier: OutboundNotifier = {
   },
 };
 let handleTelegram: ((request: Request) => Promise<Response>) | null = null;
+const telegramRuntimeState = {
+  ready: !botToken,
+  initAttempts: 0,
+  lastError: null as string | null,
+};
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
 
 async function initializeTelegramRuntime(): Promise<void> {
   if (!botToken) {
@@ -93,19 +103,42 @@ async function initializeTelegramRuntime(): Promise<void> {
   }
   notifierState.delegate = telegramNotifier;
   handleTelegram = telegramWebhookHandler;
+  telegramRuntimeState.ready = true;
+  telegramRuntimeState.lastError = null;
   log.info("telegram.runtime.ready", { background_init: telegramBackgroundInit });
 }
 
 if (botToken) {
   if (telegramBackgroundInit) {
-    log.info("telegram.runtime.init_started", { background_init: true });
-    void initializeTelegramRuntime().catch((error) => {
-      log.error("telegram.runtime.init_failed", {
-        error: error instanceof Error ? error.message : String(error),
-        hint: "Set TELEGRAM_BACKGROUND_INIT=false to fail fast on startup.",
-      });
+    log.info("telegram.runtime.init_started", {
+      background_init: true,
+      retry_delays_ms: TELEGRAM_INIT_RETRY_DELAYS_MS,
     });
+    void (async () => {
+      for (;;) {
+        telegramRuntimeState.initAttempts += 1;
+        try {
+          await initializeTelegramRuntime();
+          return;
+        } catch (error) {
+          telegramRuntimeState.ready = false;
+          telegramRuntimeState.lastError = error instanceof Error ? error.message : String(error);
+          const retryDelayMs =
+            TELEGRAM_INIT_RETRY_DELAYS_MS[
+              Math.min(telegramRuntimeState.initAttempts - 1, TELEGRAM_INIT_RETRY_DELAYS_MS.length - 1)
+            ];
+          log.error("telegram.runtime.init_failed", {
+            attempt: telegramRuntimeState.initAttempts,
+            error: telegramRuntimeState.lastError,
+            retry_in_ms: retryDelayMs,
+            hint: "Set TELEGRAM_BACKGROUND_INIT=false to fail fast on startup.",
+          });
+          await sleep(retryDelayMs);
+        }
+      }
+    })();
   } else {
+    telegramRuntimeState.initAttempts = 1;
     await initializeTelegramRuntime();
   }
 }
@@ -132,8 +165,11 @@ const pipelineDeps = {
 const httpTracer = trace.getTracer("http.server");
 
 function httpRouteLabel(url: URL, method: string): string {
-  if (method === "GET" && (url.pathname === "/" || url.pathname === "/healthz")) {
-    return "GET /health";
+  if (method === "GET" && url.pathname === "/") {
+    return "GET /";
+  }
+  if (method === "GET" && url.pathname === "/healthz") {
+    return "GET /healthz";
   }
   if (method === "POST" && url.pathname === webhookPath) {
     return "POST /telegram/webhook";
@@ -155,7 +191,15 @@ Deno.serve({ port }, async (request) => {
 
     let status = 500; // default if handler throws before assignment
     try {
-      if (request.method === "GET" && (url.pathname === "/" || url.pathname === "/healthz")) {
+      if (request.method === "GET" && url.pathname === "/") {
+        status = 200;
+        return new Response("ok", { status });
+      }
+      if (request.method === "GET" && url.pathname === "/healthz") {
+        if (botToken && telegramBackgroundInit && !telegramRuntimeState.ready) {
+          status = 503;
+          return new Response("telegram runtime is still initializing", { status });
+        }
         status = 200;
         return new Response("ok", { status });
       }
