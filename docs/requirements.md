@@ -52,7 +52,7 @@ number of hits, optional prize tier in later phases).
 **Implementation:** draws stored in SQLite; `tryInsertDraw` + unique `(game_id, draw_key)`; pipeline
 events in `src/events/otoslotto_pipeline.ts`. Ingestion: **`BetHuOtoslottoFetcher`** (§7),
 **manual** `draw.result.persist`, **optional in-process Deno Cron**
-(`DENO_CRON_RESULT_CHECK_ENABLED` hourly), or **stub** in tests (`StubDrawResultFetcher`).
+(`CRON_RESULT_CHECK_ENABLED` hourly), or **stub** in tests (`StubDrawResultFetcher`).
 
 ### FR-4 — Match calculation
 
