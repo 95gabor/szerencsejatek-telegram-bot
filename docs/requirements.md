@@ -51,7 +51,8 @@ number of hits, optional prize tier in later phases).
 
 **Implementation:** draws stored in SQLite; `tryInsertDraw` + unique `(game_id, draw_key)`; pipeline
 events in `src/events/otoslotto_pipeline.ts`. Ingestion: **`BetHuOtoslottoFetcher`** (§7),
-**manual** `draw.result.persist`, or **stub** in tests (`StubDrawResultFetcher`).
+**manual** `draw.result.persist`, **optional in-process Deno Cron** (`DENO_CRON_RESULT_CHECK_ENABLED`
+hourly), or **stub** in tests (`StubDrawResultFetcher`).
 
 ### FR-4 — Match calculation
 
@@ -126,7 +127,7 @@ The pipeline supports **manual** or **fetcher-driven** paths into `draw.result.p
 | Storage               | **SQLite** on server via **Drizzle** + **libSQL** (file DB; path via env).                                                         |
 | User-facing language  | **Hungarian** for v1 (`NFR-4`).                                                                                                    |
 | Results source (prod) | **Ötöslottó:** `BetHuOtoslottoFetcher` + `OTOSLOTTO_RESULT_JSON_URL` (default: bet.hu PublicInfo LOTTO5).                          |
-| Hosting (prod)        | **Open** — VPS, Deno Deploy, or **Kubernetes** (Helm default: long polling + internal HTTP + CronJob; optional webhook / Knative). |
+| Hosting (prod)        | **Open** — VPS, Deno Deploy, or **Kubernetes** (Helm default: long polling + internal HTTP + CronJob; optional webhook / Knative; optional in-process Deno Cron). |
 
 ## 9. Traceability (requirements → code)
 
@@ -134,7 +135,7 @@ The pipeline supports **manual** or **fetcher-driven** paths into `draw.result.p
 | ----- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | FR-1  | `src/adapters/persistence/drizzle/user_repository.ts`, `register_handlers` → `upsertUser`                                                                         |
 | FR-2  | `src/telegram/register_handlers.ts`, `src/domain/otoslotto/line.ts`, `played_line_repository`                                                                     |
-| FR-3  | `BetHuOtoslottoFetcher`, `handle_draw_update_requested`, `handle_draw_result_persist`, `DrizzleDrawRecordRepository`                                              |
+| FR-3  | `BetHuOtoslottoFetcher`, `handle_draw_update_requested`, `handle_draw_result_persist`, `DrizzleDrawRecordRepository`, `src/server.ts`                             |
 | FR-4  | `src/domain/otoslotto/match.ts`, `format_otoslotto_user_message.ts`                                                                                               |
 | FR-5  | `handle_draw_result_stored`, `handle_user_notification_requested`, `TelegramOutboundNotifier`                                                                     |
 | FR-6  | _Not implemented_                                                                                                                                                 |
@@ -160,5 +161,6 @@ The pipeline supports **manual** or **fetcher-driven** paths into `draw.result.p
 
 ---
 
-_Last updated: hosting / transport aligned with Helm defaults (long polling, CronJob, ClusterIP);
-requirements traceability, Telegram/HTML/i18n, NFR-5; align with pipeline and `docs/adr/`._
+_Last updated: hosting / transport aligned with Helm defaults (long polling, CronJob, ClusterIP) and
+optional in-process Deno Cron; requirements traceability, Telegram/HTML/i18n, NFR-5; align with
+pipeline and `docs/adr/`._
