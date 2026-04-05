@@ -94,7 +94,8 @@ optionally **`TELEGRAM_WEBHOOK_SECRET`**, and **`BOT_TOKEN`**. `server.ts` calls
 startup. Default webhook path: **`/telegram/webhook`** (`TELEGRAM_WEBHOOK_PATH`). Set
 **`TELEGRAM_BACKGROUND_INIT=true`** to start HTTP health endpoints first and initialize grammY in
 the background (useful when hosting platforms fail warmup if startup blocks on external Telegram API
-calls).
+calls). In background mode, `GET /healthz` returns **503** until Telegram runtime is ready and
+failed init attempts are retried with backoff.
 
 ### Production (Helm)
 
