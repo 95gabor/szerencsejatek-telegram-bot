@@ -56,6 +56,9 @@ paths.
 ## Setup
 
 1. Copy `.env.example` to `.env` and set `BOT_TOKEN` (from [@BotFather](https://t.me/BotFather)).
+   `DATABASE_URL` supports:
+   - SQLite/libSQL (`file:`, `libsql:`, `https:`, `wss:`)
+   - PostgreSQL (`postgres://` or `postgresql://`, including Deno Deploy provisioned Postgres)
 2. Run format/lint/test:
 
 ```bash

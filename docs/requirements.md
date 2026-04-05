@@ -49,10 +49,11 @@ number of hits, optional prize tier in later phases).
   notified.
 - **Idempotency**: the same draw must not notify users twice.
 
-**Implementation:** draws stored in SQLite; `tryInsertDraw` + unique `(game_id, draw_key)`; pipeline
-events in `src/events/otoslotto_pipeline.ts`. Ingestion: **`BetHuOtoslottoFetcher`** (§7),
-**manual** `draw.result.persist`, **optional in-process Deno Cron** (`CRON_RESULT_CHECK_ENABLED`
-hourly), or **stub** in tests (`StubDrawResultFetcher`).
+**Implementation:** draws stored via Drizzle persistence (SQLite/libSQL or PostgreSQL selected by
+`DATABASE_URL`); `tryInsertDraw` + unique `(game_id, draw_key)`; pipeline events in
+`src/events/otoslotto_pipeline.ts`. Ingestion: **`BetHuOtoslottoFetcher`** (§7), **manual**
+`draw.result.persist`, **optional in-process Deno Cron** (`CRON_RESULT_CHECK_ENABLED` hourly), or
+**stub** in tests (`StubDrawResultFetcher`).
 
 ### FR-4 — Match calculation
 
@@ -120,14 +121,14 @@ The pipeline supports **manual** or **fetcher-driven** paths into `draw.result.p
 
 ## 8. Product decisions (locked vs open)
 
-| Topic                 | Decision                                                                                                                                                          |
-| --------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| First game            | **Ötöslottó**                                                                                                                                                     |
-| Notifications         | **One message per draw per user** (one `user.notification.requested` per subscriber).                                                                             |
-| Storage               | **SQLite** on server via **Drizzle** + **libSQL** (file DB; path via env).                                                                                        |
-| User-facing language  | **Hungarian** for v1 (`NFR-4`).                                                                                                                                   |
-| Results source (prod) | **Ötöslottó:** `BetHuOtoslottoFetcher` + `OTOSLOTTO_RESULT_JSON_URL` (default: bet.hu PublicInfo LOTTO5).                                                         |
-| Hosting (prod)        | **Open** — VPS, Deno Deploy, or **Kubernetes** (Helm default: long polling + internal HTTP + CronJob; optional webhook / Knative; optional in-process Deno Cron). |
+| Topic                 | Decision                                                                                                                                                                      |
+| --------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| First game            | **Ötöslottó**                                                                                                                                                                 |
+| Notifications         | **One message per draw per user** (one `user.notification.requested` per subscriber).                                                                                         |
+| Storage               | **Drizzle** persistence with backend selected by `DATABASE_URL`: **SQLite/libSQL** (`file:`, `libsql:`, `https:`, `wss:`) or **PostgreSQL** (`postgres://`, `postgresql://`). |
+| User-facing language  | **Hungarian** for v1 (`NFR-4`).                                                                                                                                               |
+| Results source (prod) | **Ötöslottó:** `BetHuOtoslottoFetcher` + `OTOSLOTTO_RESULT_JSON_URL` (default: bet.hu PublicInfo LOTTO5).                                                                     |
+| Hosting (prod)        | **Open** — VPS, Deno Deploy, or **Kubernetes** (Helm default: long polling + internal HTTP + CronJob; optional webhook / Knative; optional in-process Deno Cron).             |
 
 ## 9. Traceability (requirements → code)
 

@@ -39,7 +39,8 @@ flowchart LR
 (`server.ts` + `WEBHOOK_URL`), never both for the same token except the **Helm longPolling** layout
 (one process polls; **`server.ts`** is **internal HTTP only** — see §5). **Handlers** implement
 commands; the **draw pipeline** fetches or accepts results, persists, matches, and **notifies** via
-`OutboundNotifier`. **Persistence** is **SQLite** (file) via Drizzle + libSQL.
+`OutboundNotifier`. **Persistence** is Drizzle with either **SQLite/libSQL** (`file:`, `libsql:`,
+`https:`, `wss:`) or **PostgreSQL** (`postgres://`, `postgresql://`), selected from `DATABASE_URL`.
 
 ```mermaid
 flowchart TB
@@ -58,7 +59,7 @@ flowchart TB
       J[CloudEvents router + stages]
       M[Match + format messages]
     end
-    DB[(SQLite file)]
+    DB[(SQLite/libSQL or PostgreSQL)]
   end
   subgraph external [Results]
     SRC[Operator JSON / persist events]
@@ -96,7 +97,7 @@ flowchart TB
     subgraph pod [Pod]
       TEL["Container: telegram_bot.ts"]
       SRV["Container: server.ts<br/>POST / + /healthz"]
-      VOL[(SQLite /data/app.db)]
+      VOL[(SQLite /data/app.db when file:)]
     end
   end
   subgraph outside [Outside cluster]
@@ -166,23 +167,24 @@ Manual / CSV flows can **emit `draw.result.persist`** directly (skip fetch). Tel
 
 ## 4. Technology choices
 
-| Layer         | Choice                                                                                                                                                                                                                                           |
-| ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Runtime       | **Deno** 2.x                                                                                                                                                                                                                                     |
-| Language      | **TypeScript**                                                                                                                                                                                                                                   |
-| Bot library   | **grammY** (`npm:grammy`); long polling in `src/telegram_bot.ts` — [ADR 0005 § Dependencies](adr/0005-telegram-grammy.md#dependencies).                                                                                                          |
-| DB            | **SQLite** via **Drizzle** + **libSQL** — [ADR 0002 § Dependencies](adr/0002-drizzle-libsql-sqlite.md#dependencies).                                                                                                                             |
-| Events        | **CloudEvents v1.0** shapes internally; inbound HTTP: **`cloudevents`** — [ADR 0003 § Dependencies](adr/0003-http-cloudevents-knative.md#dependencies).                                                                                          |
-| HTTP          | `Deno.serve` in `src/server.ts`: `POST /` CloudEvents, `GET /` and `GET /healthz`; `fetch` for Telegram and result APIs.                                                                                                                         |
-| Config        | **Zod** validates env at startup (`loadConfig`) — [ADR 0006 § Dependencies](adr/0006-zod-config-and-i18n.md#dependencies).                                                                                                                       |
-| i18n          | **`t(locale, key, params)`**; per-locale maps under `src/i18n/locales/` — [ADR 0006](adr/0006-zod-config-and-i18n.md).                                                                                                                           |
-| Observability | **OpenTelemetry** (metrics + traces, OTLP/HTTP) when `OTEL_EXPORTER_OTLP_ENDPOINT` is set — [ADR 0007](adr/0007-opentelemetry-metrics-tracing.md); `src/observability/`.                                                                         |
-| Logging       | **Structured** logs in `src/logging/` — `LOG_FORMAT=json` (one JSON object per line) or `text`; `LOG_LEVEL`; **`trace_id` / `span_id`** from active OTel span; handler messages `http.handler`, `pipeline.handler`, `telegram.handler` (no PII). |
+| Layer         | Choice                                                                                                                                                                                                                                              |
+| ------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Runtime       | **Deno** 2.x                                                                                                                                                                                                                                        |
+| Language      | **TypeScript**                                                                                                                                                                                                                                      |
+| Bot library   | **grammY** (`npm:grammy`); long polling in `src/telegram_bot.ts` — [ADR 0005 § Dependencies](adr/0005-telegram-grammy.md#dependencies).                                                                                                             |
+| DB            | **Drizzle ORM** with backend selected from `DATABASE_URL`: **libSQL/SQLite** (`file:`, `libsql:`, `https:`, `wss:`) or **PostgreSQL** (`postgres://`, `postgresql://`) — [ADR 0002 § Dependencies](adr/0002-drizzle-libsql-sqlite.md#dependencies). |
+| Events        | **CloudEvents v1.0** shapes internally; inbound HTTP: **`cloudevents`** — [ADR 0003 § Dependencies](adr/0003-http-cloudevents-knative.md#dependencies).                                                                                             |
+| HTTP          | `Deno.serve` in `src/server.ts`: `POST /` CloudEvents, `GET /` and `GET /healthz`; `fetch` for Telegram and result APIs.                                                                                                                            |
+| Config        | **Zod** validates env at startup (`loadConfig`) — [ADR 0006 § Dependencies](adr/0006-zod-config-and-i18n.md#dependencies).                                                                                                                          |
+| i18n          | **`t(locale, key, params)`**; per-locale maps under `src/i18n/locales/` — [ADR 0006](adr/0006-zod-config-and-i18n.md).                                                                                                                              |
+| Observability | **OpenTelemetry** (metrics + traces, OTLP/HTTP) when `OTEL_EXPORTER_OTLP_ENDPOINT` is set — [ADR 0007](adr/0007-opentelemetry-metrics-tracing.md); `src/observability/`.                                                                            |
+| Logging       | **Structured** logs in `src/logging/` — `LOG_FORMAT=json` (one JSON object per line) or `text`; `LOG_LEVEL`; **`trace_id` / `span_id`** from active OTel span; handler messages `http.handler`, `pipeline.handler`, `telegram.handler` (no PII).    |
 
 Architecture decisions are recorded under [docs/adr/](adr/README.md).
 
-**Persistence:** Drizzle + libSQL was chosen over Prisma, TypeORM, MikroORM, and Kysely (trade-offs
-in [ADR 0002 § Alternatives considered](adr/0002-drizzle-libsql-sqlite.md#alternatives-considered)).
+**Persistence:** Drizzle remains the ORM/query layer; runtime backend is selected from
+`DATABASE_URL` between libSQL/SQLite and PostgreSQL (trade-offs and dependencies in
+[ADR 0002 § Alternatives considered](adr/0002-drizzle-libsql-sqlite.md#alternatives-considered)).
 
 **Events pipeline:** Alternatives (monolithic orchestrator, ad-hoc JSON, brokers, workflow engines)
 in [ADR 0001 § Alternatives considered](adr/0001-cloud-events-pipeline.md#alternatives-considered).
@@ -251,7 +253,8 @@ src/
   ports/                     # interfaces (repositories, notifier, fetcher, emit)
   adapters/
     http/                    # CloudEvents request parsing
-    persistence/drizzle/     # Drizzle + libSQL SQLite
+    persistence/drizzle/     # Drizzle + libSQL/SQLite backend
+    persistence/drizzle_postgres/ # Drizzle + postgres-js backend
     notify/                  # OutboundNotifier (noop or Telegram)
     ingestion/               # DrawResultFetcher implementations
 tests/                       # e2e (kind) when E2E_KIND=1
