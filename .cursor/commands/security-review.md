@@ -10,3 +10,6 @@ Checklist:
 
 Output: prioritized findings (Critical / High / Medium / Low) with file references and concrete
 fixes.
+
+If you make any code changes while remediating findings, always run `deno task check` (fmt + lint +
+tests) before finalizing.
