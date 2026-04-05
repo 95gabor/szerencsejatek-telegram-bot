@@ -7,13 +7,11 @@ import { getLogger } from "../../logging/mod.ts";
 import type { DrawResultFetcher } from "../../ports/draw_result_fetcher.ts";
 
 /** Public Ötöslottó history table feed used as default source. */
-export const DEFAULT_OTOSLOTTO_RESULT_JSON_URL =
-  "https://bet.szerencsejatek.hu/cmsfiles/otos.html";
+export const DEFAULT_OTOSLOTTO_RESULT_JSON_URL = "https://bet.szerencsejatek.hu/cmsfiles/otos.html";
 // Legacy endpoint kept for quick rollback/testing:
 // https://bet.szerencsejatek.hu/PublicInfo/ResultJSON.aspx?game=LOTTO5&query=last
 
-const RESULT_SOURCE_LABEL_JSON =
-  "bet.szerencsejatek.hu PublicInfo ResultJSON (LOTTO5&query=last)";
+const RESULT_SOURCE_LABEL_JSON = "bet.szerencsejatek.hu PublicInfo ResultJSON (LOTTO5&query=last)";
 const RESULT_SOURCE_LABEL_HTML = "bet.szerencsejatek.hu cmsfiles/otos.html";
 
 function isRecord(v: unknown): v is Record<string, unknown> {

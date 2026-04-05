@@ -268,8 +268,8 @@ deploy/
 
 ## 8. Risks and mitigations
 
-| Risk                    | Mitigation                                                                                |
-| ----------------------- | ----------------------------------------------------------------------------------------- |
+| Risk                    | Mitigation                                                                                                                |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------- |
 | Operator feed changes   | **`OTOSLOTTO_RESULT_JSON_URL`** override (default: `cmsfiles/otos.html`); parse errors logged; pipeline skips on failure. |
-| Rule complexity (tiers) | Ship **hit counts** first; add tier tables per game in domain layer.                      |
-| Duplicate notifications | Persist processed `(game, draw)` and notification ledger.                                 |
+| Rule complexity (tiers) | Ship **hit counts** first; add tier tables per game in domain layer.                                                      |
+| Duplicate notifications | Persist processed `(game, draw)` and notification ledger.                                                                 |

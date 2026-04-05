@@ -126,7 +126,7 @@ The pipeline supports **manual** or **fetcher-driven** paths into `draw.result.p
 | Notifications         | **One message per draw per user** (one `user.notification.requested` per subscriber).                                                                                         |
 | Storage               | **Drizzle** persistence with backend selected by `DATABASE_URL`: **SQLite/libSQL** (`file:`, `libsql:`, `https:`, `wss:`) or **PostgreSQL** (`postgres://`, `postgresql://`). |
 | User-facing language  | **Hungarian** for v1 (`NFR-4`).                                                                                                                                               |
-| Results source (prod) | **Ötöslottó:** `BetHuOtoslottoFetcher` + `OTOSLOTTO_RESULT_JSON_URL` (default: bet.hu `cmsfiles/otos.html`).                                                                 |
+| Results source (prod) | **Ötöslottó:** `BetHuOtoslottoFetcher` + `OTOSLOTTO_RESULT_JSON_URL` (default: bet.hu `cmsfiles/otos.html`).                                                                  |
 | Hosting (prod)        | **Open** — VPS, Deno Deploy, or **Kubernetes** (Helm default: long polling + internal HTTP + CronJob; optional webhook / Knative; optional in-process Deno Cron).             |
 
 ## 9. Traceability (requirements → code)
