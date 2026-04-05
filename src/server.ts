@@ -42,7 +42,7 @@ const gameId = config.GAME_ID;
 const port = config.PORT;
 const botToken = config.BOT_TOKEN;
 const webhookBaseUrl = config.WEBHOOK_URL;
-const denoCronResultCheckEnabled = config.DENO_CRON_RESULT_CHECK_ENABLED;
+const denoCronResultCheckEnabled = config.CRON_RESULT_CHECK_ENABLED;
 const telegramBackgroundInit = config.TELEGRAM_BACKGROUND_INIT;
 const webhookPath = config.TELEGRAM_WEBHOOK_PATH;
 const webhookSecret = config.TELEGRAM_WEBHOOK_SECRET;
@@ -177,7 +177,7 @@ const denoCron = (Deno as typeof Deno & { cron?: DenoCronFn }).cron;
 if (denoCronResultCheckEnabled) {
   if (!denoCron) {
     log.error("cron.draw_update.unsupported", {
-      hint: "DENO_CRON_RESULT_CHECK_ENABLED=true requires runtime support for Deno.cron.",
+      hint: "CRON_RESULT_CHECK_ENABLED=true requires runtime support for Deno.cron.",
     });
     Deno.exit(1);
   }
