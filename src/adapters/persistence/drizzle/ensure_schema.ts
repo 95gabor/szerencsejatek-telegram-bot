@@ -1,4 +1,5 @@
 import { createClient } from "npm:@libsql/client@0.14.0/node";
+import { normalizeDatabaseUrlForLibsql } from "./database_url.ts";
 
 const STATEMENTS = [
   "PRAGMA foreign_keys = ON",
@@ -29,7 +30,8 @@ const STATEMENTS = [
 ];
 
 export async function ensureSchema(databaseUrl: string): Promise<void> {
-  const client = createClient({ url: databaseUrl });
+  const normalizedUrl = normalizeDatabaseUrlForLibsql(databaseUrl);
+  const client = createClient({ url: normalizedUrl });
   for (const statement of STATEMENTS) {
     await client.execute(statement);
   }

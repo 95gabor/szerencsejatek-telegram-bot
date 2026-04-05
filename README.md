@@ -56,6 +56,8 @@ paths.
 ## Setup
 
 1. Copy `.env.example` to `.env` and set `BOT_TOKEN` (from [@BotFather](https://t.me/BotFather)).
+   `DATABASE_URL` in this build supports SQLite/libSQL URLs (`file:`, `libsql:`, `https:`, `wss:`);
+   `postgres://` URLs are not supported by the current persistence adapter.
 2. Run format/lint/test:
 
 ```bash
