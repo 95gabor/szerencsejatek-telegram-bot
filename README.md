@@ -8,6 +8,8 @@ and when **official results** are available the bot **notifies** them with the w
 **Repository:**
 [github.com/95gabor/szerencsejatek-telegram-bot](https://github.com/95gabor/szerencsejatek-telegram-bot)
 
+**Current bot:** [@SzerencsejatekChatBot](https://t.me/SzerencsejatekChatBot)
+
 ## Documentation
 
 | Document                                                                                               | Purpose                                                                                       |
