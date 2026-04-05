@@ -107,14 +107,13 @@ and requirements updates per game.
 
 ## 7. Data source for results
 
-**Implemented (Ötöslottó):** **`BetHuOtoslottoFetcher`** calls the operator’s public JSON endpoint
-(`bet.szerencsejatek.hu` **`PublicInfo/ResultJSON.aspx?game=LOTTO5&query=last`**), the same feed
-used by the official “lottószámok” UI. Override with **`OTOSLOTTO_RESULT_JSON_URL`** if the URL
-changes.
+**Implemented (Ötöslottó):** **`BetHuOtoslottoFetcher`** calls the operator’s public historical
+table endpoint (`bet.szerencsejatek.hu` **`cmsfiles/otos.html`**) and parses the newest row
+descending by draw date/week. Override with **`OTOSLOTTO_RESULT_JSON_URL`** if the URL changes.
 
 - **Option B** remains available: **manual** `draw.result.persist` or tooling (see pipeline).
-- **Option C** (arbitrary scraping) is **not** used — the fetcher uses the structured **public
-  JSON** feed only.
+- **Option C** (arbitrary scraping) is **not** used — the fetcher uses official operator-published
+  endpoints only.
 
 The pipeline supports **manual** or **fetcher-driven** paths into `draw.result.persist`; see
 `docs/architecture.md` §2.1.
@@ -127,7 +126,7 @@ The pipeline supports **manual** or **fetcher-driven** paths into `draw.result.p
 | Notifications         | **One message per draw per user** (one `user.notification.requested` per subscriber).                                                                                         |
 | Storage               | **Drizzle** persistence with backend selected by `DATABASE_URL`: **SQLite/libSQL** (`file:`, `libsql:`, `https:`, `wss:`) or **PostgreSQL** (`postgres://`, `postgresql://`). |
 | User-facing language  | **Hungarian** for v1 (`NFR-4`).                                                                                                                                               |
-| Results source (prod) | **Ötöslottó:** `BetHuOtoslottoFetcher` + `OTOSLOTTO_RESULT_JSON_URL` (default: bet.hu PublicInfo LOTTO5).                                                                     |
+| Results source (prod) | **Ötöslottó:** `BetHuOtoslottoFetcher` + `OTOSLOTTO_RESULT_JSON_URL` (default: bet.hu `cmsfiles/otos.html`).                                                                 |
 | Hosting (prod)        | **Open** — VPS, Deno Deploy, or **Kubernetes** (Helm default: long polling + internal HTTP + CronJob; optional webhook / Knative; optional in-process Deno Cron).             |
 
 ## 9. Traceability (requirements → code)
