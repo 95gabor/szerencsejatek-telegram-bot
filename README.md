@@ -96,6 +96,8 @@ startup. Default webhook path: **`/telegram/webhook`** (`TELEGRAM_WEBHOOK_PATH`)
 the background (useful when hosting platforms fail warmup if startup blocks on external Telegram API
 calls). In background mode, `GET /healthz` returns **503** until Telegram runtime is ready and
 failed init attempts are retried with backoff.
+Set **`DENO_CRON_RESULT_CHECK_ENABLED=true`** to register an in-process **Deno Cron** hourly draw
+check (disabled by default).
 
 ### Production (Helm)
 

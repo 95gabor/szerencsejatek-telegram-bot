@@ -11,6 +11,11 @@ import { DrizzleUserRepository } from "./adapters/persistence/drizzle/user_repos
 import { ensureSchema } from "./adapters/persistence/drizzle/ensure_schema.ts";
 import { createPipelineEmitter, dispatchPipelineEvent } from "./application/dispatch.ts";
 import { loadConfig } from "./config/env.ts";
+import { createCloudEvent } from "./events/cloudevents.ts";
+import {
+  type DrawUpdateRequestedData,
+  EVENT_TYPE_DRAW_UPDATE_REQUESTED,
+} from "./events/otoslotto_pipeline.ts";
 import { configureLogger, getLogger } from "./logging/mod.ts";
 import {
   httpDurationMs,
@@ -37,6 +42,7 @@ const gameId = config.GAME_ID;
 const port = config.PORT;
 const botToken = config.BOT_TOKEN;
 const webhookBaseUrl = config.WEBHOOK_URL;
+const denoCronResultCheckEnabled = config.DENO_CRON_RESULT_CHECK_ENABLED;
 const telegramBackgroundInit = config.TELEGRAM_BACKGROUND_INIT;
 const webhookPath = config.TELEGRAM_WEBHOOK_PATH;
 const webhookSecret = config.TELEGRAM_WEBHOOK_SECRET;
@@ -163,6 +169,54 @@ const pipelineDeps = {
   gameId,
   locale,
 };
+
+type DenoCronCallback = () => void | Promise<void>;
+type DenoCronFn = (name: string, schedule: string, callback: DenoCronCallback) => void;
+const denoCron = (Deno as typeof Deno & { cron?: DenoCronFn }).cron;
+
+if (denoCronResultCheckEnabled) {
+  if (!denoCron) {
+    log.error("cron.draw_update.unsupported", {
+      hint: "DENO_CRON_RESULT_CHECK_ENABLED=true requires runtime support for Deno.cron.",
+    });
+    Deno.exit(1);
+  }
+  const cronName = "otoslotto-hourly-draw-update";
+  const cronSchedule = "0 * * * *";
+  denoCron(cronName, cronSchedule, async () => {
+    if (botToken && !telegramRuntimeState.ready) {
+      log.warn("cron.draw_update.skipped.telegram_not_ready", {
+        cron_name: cronName,
+      });
+      return;
+    }
+    const event = createCloudEvent<DrawUpdateRequestedData>({
+      id: crypto.randomUUID(),
+      source: "cron/deno",
+      type: EVENT_TYPE_DRAW_UPDATE_REQUESTED,
+      datacontenttype: "application/json",
+      data: { gameId },
+    });
+    try {
+      await dispatchPipelineEvent(event, pipelineDeps);
+      log.info("cron.draw_update.completed", {
+        cron_name: cronName,
+        cron_schedule: cronSchedule,
+        game_id: gameId,
+      });
+    } catch (error) {
+      log.error("cron.draw_update.failed", {
+        cron_name: cronName,
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
+  });
+  log.info("cron.draw_update.enabled", {
+    cron_name: cronName,
+    cron_schedule: cronSchedule,
+    game_id: gameId,
+  });
+}
 
 const httpTracer = trace.getTracer("http.server");
 

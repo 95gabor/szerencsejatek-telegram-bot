@@ -219,6 +219,9 @@ record **Approved by** and **Approved at** (UTC ISO timestamp) in the ADR **Revi
   client has registered a webhook. In **Helm** long-polling mode, the polling container clears the
   webhook while the **`server.ts`** sidecar serves **ClusterIP-only** HTTP (no public webhook URL).
 - **CloudEvents:** same **`server.ts`** — **`POST /`** for pipeline CloudEvents (`cloudevents` SDK).
+- **Deno Cron (optional):** set **`DENO_CRON_RESULT_CHECK_ENABLED=true`** to register an in-process
+  **hourly** scheduler (`0 * * * *`) in `server.ts` that emits `draw.update.requested` internally.
+  Default is off.
 - **Knative Serving**: one Service can handle **both** Telegram webhooks and CloudEvents; **scale to
   zero** works when idle (no long-lived polling loop). **Knative Eventing** (Broker + Trigger) can
   deliver CloudEvents to that Service. See [deploy/kind/README.md](../deploy/kind/README.md).

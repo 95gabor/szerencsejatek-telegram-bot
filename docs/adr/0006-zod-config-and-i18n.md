@@ -34,7 +34,8 @@ to avoid drift and to support future locales.
 1. **`src/config/env.ts`**: **`@std/dotenv`** `loadSync({ export: true })` loads `./.env` into
    `Deno.env` when the file exists (existing process env wins). Then validate with **Zod**
    (`safeParse`); on failure log `flatten()` and **`Deno.exit(1)`**. Export inferred **`AppConfig`**
-   type.
+   type. Operational toggles (for example warmup-safe Telegram init and optional in-process Deno
+   Cron scheduling) are validated in the same schema.
 2. **`src/i18n/`**: `Locale` union (currently **`hu`**); `locales/hu.ts` holds `as const` strings;
    **`translate.ts`** interpolates `{{param}}` placeholders; domain errors use **typed reasons**
    (e.g. `InvalidOtoslottoLineError`) and Telegram maps them via
