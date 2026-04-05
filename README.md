@@ -92,6 +92,9 @@ deno task dev
 **Knative / webhook (scale-to-zero):** set **`WEBHOOK_URL`** (public **HTTPS**, no trailing slash),
 optionally **`TELEGRAM_WEBHOOK_SECRET`**, and **`BOT_TOKEN`**. `server.ts` calls **`setWebhook`** at
 startup. Default webhook path: **`/telegram/webhook`** (`TELEGRAM_WEBHOOK_PATH`).
+Set **`TELEGRAM_BACKGROUND_INIT=true`** to start HTTP health endpoints first and initialize grammY in
+the background (useful when hosting platforms fail warmup if startup blocks on external Telegram API
+calls).
 
 ### Production (Helm)
 
