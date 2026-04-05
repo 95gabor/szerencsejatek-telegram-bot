@@ -4,6 +4,24 @@ import { DEFAULT_OTOSLOTTO_RESULT_JSON_URL } from "../adapters/ingestion/bet_hu_
 import { DEFAULT_TELEGRAM_WEBHOOK_PATH } from "../telegram/webhook_path.ts";
 
 const emptyToUndefined = (v: unknown) => v === "" || v === undefined ? undefined : v;
+const parseBooleanEnv = (v: unknown): unknown => {
+  if (v === undefined || v === "") {
+    return undefined;
+  }
+  if (typeof v === "boolean") {
+    return v;
+  }
+  if (typeof v === "string") {
+    const normalized = v.trim().toLowerCase();
+    if (["1", "true", "yes", "on"].includes(normalized)) {
+      return true;
+    }
+    if (["0", "false", "no", "off"].includes(normalized)) {
+      return false;
+    }
+  }
+  return v;
+};
 
 const envSchema = z.object({
   PORT: z.coerce.number().int().min(1).max(65535).default(8080),
@@ -14,6 +32,7 @@ const envSchema = z.object({
     emptyToUndefined,
     z.string().url().optional(),
   ),
+  TELEGRAM_BACKGROUND_INIT: z.preprocess(parseBooleanEnv, z.boolean().default(false)),
   TELEGRAM_WEBHOOK_PATH: z.string().min(1).startsWith("/").default(DEFAULT_TELEGRAM_WEBHOOK_PATH),
   TELEGRAM_WEBHOOK_SECRET: z.preprocess(emptyToUndefined, z.string().min(1).optional()),
   DEFAULT_LOCALE: z.enum(["hu"]).default("hu"),
@@ -41,6 +60,7 @@ function readRawEnv(): Record<string, string | undefined> {
     GAME_ID: Deno.env.get("GAME_ID"),
     BOT_TOKEN: Deno.env.get("BOT_TOKEN"),
     WEBHOOK_URL: Deno.env.get("WEBHOOK_URL"),
+    TELEGRAM_BACKGROUND_INIT: Deno.env.get("TELEGRAM_BACKGROUND_INIT"),
     TELEGRAM_WEBHOOK_PATH: Deno.env.get("TELEGRAM_WEBHOOK_PATH"),
     TELEGRAM_WEBHOOK_SECRET: Deno.env.get("TELEGRAM_WEBHOOK_SECRET"),
     DEFAULT_LOCALE: Deno.env.get("DEFAULT_LOCALE"),

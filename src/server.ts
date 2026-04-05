@@ -37,6 +37,7 @@ const gameId = config.GAME_ID;
 const port = config.PORT;
 const botToken = config.BOT_TOKEN;
 const webhookBaseUrl = config.WEBHOOK_URL;
+const telegramBackgroundInit = config.TELEGRAM_BACKGROUND_INIT;
 const webhookPath = config.TELEGRAM_WEBHOOK_PATH;
 const webhookSecret = config.TELEGRAM_WEBHOOK_SECRET;
 const locale = config.DEFAULT_LOCALE;
@@ -48,10 +49,23 @@ const draws = new DrizzleDrawRecordRepository(db);
 const lines = new DrizzlePlayedLineRepository(db);
 const fetcher = new BetHuOtoslottoFetcher({ url: config.OTOSLOTTO_RESULT_JSON_URL });
 
-let notifier: OutboundNotifier;
+const notifierState: { delegate: OutboundNotifier | null } = {
+  delegate: botToken ? null : new NoopOutboundNotifier(),
+};
+const notifier: OutboundNotifier = {
+  async sendUserMessage(input) {
+    if (!notifierState.delegate) {
+      throw new Error("telegram_notifier_not_ready");
+    }
+    await notifierState.delegate.sendUserMessage(input);
+  },
+};
 let handleTelegram: ((request: Request) => Promise<Response>) | null = null;
 
-if (botToken) {
+async function initializeTelegramRuntime(): Promise<void> {
+  if (!botToken) {
+    return;
+  }
   const users = new DrizzleUserRepository(db);
   const bot = new Bot(botToken);
   registerTelegramHandlers(bot, { users, lines, draws, gameId, locale });
@@ -60,8 +74,8 @@ if (botToken) {
       error: err instanceof Error ? err.message : String(err),
     });
   });
-  notifier = new TelegramOutboundNotifier(bot);
-  handleTelegram = webhookCallback(bot, "std/http", {
+  const telegramNotifier = new TelegramOutboundNotifier(bot);
+  const telegramWebhookHandler = webhookCallback(bot, "std/http", {
     secretToken: webhookSecret,
   });
   await bot.init();
@@ -77,8 +91,23 @@ if (botToken) {
       hint: "Set WEBHOOK_URL for auto setWebhook, or register manually",
     });
   }
-} else {
-  notifier = new NoopOutboundNotifier();
+  notifierState.delegate = telegramNotifier;
+  handleTelegram = telegramWebhookHandler;
+  log.info("telegram.runtime.ready", { background_init: telegramBackgroundInit });
+}
+
+if (botToken) {
+  if (telegramBackgroundInit) {
+    log.info("telegram.runtime.init_started", { background_init: true });
+    void initializeTelegramRuntime().catch((error) => {
+      log.error("telegram.runtime.init_failed", {
+        error: error instanceof Error ? error.message : String(error),
+        hint: "Set TELEGRAM_BACKGROUND_INIT=false to fail fast on startup.",
+      });
+    });
+  } else {
+    await initializeTelegramRuntime();
+  }
 }
 
 const emit = createPipelineEmitter({
@@ -131,10 +160,18 @@ Deno.serve({ port }, async (request) => {
         return new Response("ok", { status });
       }
 
-      if (request.method === "POST" && handleTelegram && url.pathname === webhookPath) {
-        const res = await handleTelegram(request);
-        status = res.status;
-        return res;
+      if (request.method === "POST" && url.pathname === webhookPath) {
+        if (!botToken) {
+          status = 404;
+          return new Response("telegram webhook disabled", { status });
+        }
+        if (!handleTelegram) {
+          status = 503;
+          return new Response("telegram webhook not ready", { status });
+        }
+        const telegramResponse = await handleTelegram(request);
+        status = telegramResponse.status;
+        return telegramResponse;
       }
 
       if (request.method !== "POST") {
