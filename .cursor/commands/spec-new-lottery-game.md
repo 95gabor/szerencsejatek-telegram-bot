@@ -9,3 +9,6 @@ The user wants to add support for another Szerencsejáték lottery game.
    plus any new env vars or cron schedule changes.
 
 Do not write implementation code until the user confirms the addendum.
+
+If implementation is requested and you make code changes, run `deno task check` (fmt + lint + tests)
+before finalizing.
