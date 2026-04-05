@@ -23,6 +23,8 @@ Contributions are welcome. Changes go through **pull requests** and **review** b
 ## Pull requests
 
 - Prefer **small, focused** PRs with a single logical change when practical.
+- Use **Conventional Commit format** for PR titles: `type(scope?): subject` (e.g.
+  `feat(cron): add optional hourly in-process result check`).
 - Fill in the **[pull request template](.github/pull_request_template.md)** (summary, test plan).
 - **Do not** commit secrets, real bot tokens, or private URLs with credentials. CI and reviewers
   will reject or revert such changes.

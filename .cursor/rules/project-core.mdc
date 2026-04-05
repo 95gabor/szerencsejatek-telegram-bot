@@ -23,6 +23,8 @@ alwaysApply: true
 
 - **After each implementation iteration**, review the change set: run `deno task check`, scan for
   scope creep and regressions, and confirm the work matches `docs/` before moving on.
+- **Pull request titles**: Use **Conventional Commit** format for PR titles (for example:
+  `feat: add hourly deno cron draw check`, `fix: retry telegram background init`).
 - **Docs and ADRs**: When behaviour or architecture changes, update the relevant files under `docs/`
   (and `README.md` / `AGENTS.md` if contributor expectations change). Record durable stack or design
   decisions in `docs/adr/` per `docs/adr/README.md`. For **new or materially changed ADRs** tied to

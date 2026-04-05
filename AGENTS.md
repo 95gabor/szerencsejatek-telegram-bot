@@ -94,6 +94,8 @@ Router: `src/application/dispatch.ts`. Prefer **clarity over cleverness** in han
 Before considering a change **done**, **review the code** (same session or follow-up):
 
 - Run `deno task check` (fmt, lint, tests) and fix failures.
+- For created/updated pull requests, use **Conventional Commit** style PR titles:
+  `type(scope): summary` or `type: summary` (e.g. `feat: add hourly Deno cron draw checks`).
 - Re-read the diff: scope creep, naming, error paths, and alignment with `docs/architecture.md` and
   ADRs when the decision surface changed. If **`deno.json` or imports** changed, confirm ADR
   **Dependencies** / inventory were updated (see § Documentation and ADRs — new dependencies).
