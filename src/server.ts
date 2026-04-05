@@ -123,10 +123,12 @@ if (botToken) {
         } catch (error) {
           telegramRuntimeState.ready = false;
           telegramRuntimeState.lastError = error instanceof Error ? error.message : String(error);
-          const retryDelayMs =
-            TELEGRAM_INIT_RETRY_DELAYS_MS[
-              Math.min(telegramRuntimeState.initAttempts - 1, TELEGRAM_INIT_RETRY_DELAYS_MS.length - 1)
-            ];
+          const retryDelayMs = TELEGRAM_INIT_RETRY_DELAYS_MS[
+            Math.min(
+              telegramRuntimeState.initAttempts - 1,
+              TELEGRAM_INIT_RETRY_DELAYS_MS.length - 1,
+            )
+          ];
           log.error("telegram.runtime.init_failed", {
             attempt: telegramRuntimeState.initAttempts,
             error: telegramRuntimeState.lastError,
