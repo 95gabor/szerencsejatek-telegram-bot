@@ -78,8 +78,8 @@ For non-command free text messages, the bot replies with the same help content a
 **Implementation:** `OutboundNotifier`; Telegram adapter uses **HTML** parse mode; messages built
 via `src/i18n/` (`t()`, locale files) and `format_otoslotto_user_message.ts`. **Formatting:** use
 `<code>` for **numeric** values; in draw notifications, highlight matched played numbers with
-`<b>...</b>` while keeping each number in `<code>...</code>`; do **not** wrap **slash-commands**
-in `<code>` (product rule).
+`<b>...</b>` while keeping each number in `<code>...</code>`; do **not** wrap **slash-commands** in
+`<code>` (product rule).
 
 ### FR-6 — Opt out
 
