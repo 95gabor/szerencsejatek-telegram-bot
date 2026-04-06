@@ -45,7 +45,7 @@ const envSchema = z.object({
   ),
   LOG_FORMAT: z.enum(["json", "text"]).default("text"),
   LOG_LEVEL: z.enum(["debug", "info", "warn", "error"]).default("info"),
-  /** Ötöslottó JSON feed (operator public API). Empty env uses default bet.szerencsejatek.hu URL. */
+  /** Ötöslottó source URL (JSON or HTML parser supported). Empty env uses project default URL. */
   OTOSLOTTO_RESULT_JSON_URL: z.preprocess(
     (v) => (v === "" || v === undefined ? DEFAULT_OTOSLOTTO_RESULT_JSON_URL : v),
     z.string().url(),

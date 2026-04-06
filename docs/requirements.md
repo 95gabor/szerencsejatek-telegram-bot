@@ -112,13 +112,16 @@ and requirements updates per game.
 
 ## 7. Data source for results
 
-**Implemented (Ötöslottó):** **`BetHuOtoslottoFetcher`** calls the operator’s public historical
-table endpoint (`bet.szerencsejatek.hu` **`cmsfiles/otos.html`**) and parses the newest row
-descending by draw date/week. Override with **`OTOSLOTTO_RESULT_JSON_URL`** if the URL changes.
+**Implemented (Ötöslottó):** **`BetHuOtoslottoFetcher`** currently defaults to a third-party results
+page (`magayo.com` Hungary Otoslotto) because operator endpoints are geo/IP-restricted from some
+runtime environments. Override with **`OTOSLOTTO_RESULT_JSON_URL`** to switch source.
+
+- Official source URLs (kept in code/docs for fallback when reachable):
+  - `https://bet.szerencsejatek.hu/cmsfiles/otos.html`
+  - `https://bet.szerencsejatek.hu/PublicInfo/ResultJSON.aspx?game=LOTTO5&query=last`
 
 - **Option B** remains available: **manual** `draw.result.persist` or tooling (see pipeline).
-- **Option C** (arbitrary scraping) is **not** used — the fetcher uses official operator-published
-  endpoints only.
+- **Option C** (arbitrary scraping) is **not** used — only known lottery result pages are parsed.
 
 The pipeline supports **manual** or **fetcher-driven** paths into `draw.result.persist`; see
 `docs/architecture.md` §2.1.
@@ -131,7 +134,7 @@ The pipeline supports **manual** or **fetcher-driven** paths into `draw.result.p
 | Notifications         | **One message per draw per user** (one `user.notification.requested` per subscriber).                                                                                         |
 | Storage               | **Drizzle** persistence with backend selected by `DATABASE_URL`: **SQLite/libSQL** (`file:`, `libsql:`, `https:`, `wss:`) or **PostgreSQL** (`postgres://`, `postgresql://`). |
 | User-facing language  | **Hungarian** for v1 (`NFR-4`).                                                                                                                                               |
-| Results source (prod) | **Ötöslottó:** `BetHuOtoslottoFetcher` + `OTOSLOTTO_RESULT_JSON_URL` (default: bet.hu `cmsfiles/otos.html`).                                                                  |
+| Results source (prod) | **Ötöslottó:** `BetHuOtoslottoFetcher` + `OTOSLOTTO_RESULT_JSON_URL` (default: magayo third-party fallback; override to official endpoint when reachable).                    |
 | Hosting (prod)        | **Open** — VPS, Deno Deploy, or **Kubernetes** (Helm default: long polling + internal HTTP + CronJob; optional webhook / Knative; optional in-process Deno Cron).             |
 
 ## 9. Traceability (requirements → code)
@@ -162,7 +165,8 @@ The pipeline supports **manual** or **fetcher-driven** paths into `draw.result.p
 
 ## 11. Open questions
 
-1. **Production results source** (§7): API vs manual vs scraping — owner, timeline, legal review.
+1. **Production results source** (§7): keep third-party fallback or move to stable official/API feed
+   once deployment egress/IP constraints are resolved.
 2. **FR-6** opt-out: exact commands (`/stop`?), retention, and GDPR wording.
 3. **Rate limits** and batching for large subscriber lists (see `docs/design-plan.md` risks).
 4. **Play duration UX and model** (FR-2 backlog): command syntax and defaults for one draw/week vs N

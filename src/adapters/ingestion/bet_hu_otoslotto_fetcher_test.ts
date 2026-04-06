@@ -3,6 +3,7 @@ import {
   BetHuOtoslottoFetcher,
   parseBetHuLottery5LastDraw,
   parseBetHuOtoslottoLatestFromHtml,
+  parseMagayoOtoslottoLatestFromHtml,
 } from "./bet_hu_otoslotto_fetcher.ts";
 
 const sampleJson = {
@@ -48,6 +49,24 @@ const sampleHtml = `
 </html>
 `;
 
+const sampleMagayoHtml = `
+<html>
+<body>
+  <h3>Latest Otoslotto Results</h3>
+  <div class="row mt-3">
+    <h5>4 April 2026 (Saturday)</h5>
+    <p>
+      <img src="/scripts/show_ball.php?p1=M&amp;p2=36" alt="" />
+      <img src="/scripts/show_ball.php?p1=M&amp;p2=45" alt="" />
+      <img src="/scripts/show_ball.php?p1=M&amp;p2=50" alt="" />
+      <img src="/scripts/show_ball.php?p1=M&amp;p2=67" alt="" />
+      <img src="/scripts/show_ball.php?p1=M&amp;p2=77" alt="" />
+    </p>
+  </div>
+</body>
+</html>
+`;
+
 Deno.test("parseBetHuLottery5LastDraw extracts draw_id and five xml numbers", () => {
   const p = parseBetHuLottery5LastDraw(sampleJson);
   assertEquals(p?.drawKey, "36126");
@@ -62,6 +81,12 @@ Deno.test("parseBetHuLottery5LastDraw returns null for empty game list", () => {
 Deno.test("parseBetHuOtoslottoLatestFromHtml extracts latest row values", () => {
   const p = parseBetHuOtoslottoLatestFromHtml(sampleHtml);
   assertEquals(p?.drawKey, "2026-14");
+  assertEquals(p?.winningNumbers, [36, 45, 50, 67, 77]);
+});
+
+Deno.test("parseMagayoOtoslottoLatestFromHtml extracts latest row values", () => {
+  const p = parseMagayoOtoslottoLatestFromHtml(sampleMagayoHtml);
+  assertEquals(p?.drawKey, "2026-04-04");
   assertEquals(p?.winningNumbers, [36, 45, 50, 67, 77]);
 });
 
@@ -95,6 +120,23 @@ Deno.test("BetHuOtoslottoFetcher falls back to html parser", async () => {
   });
   const r = await fetcher.fetchLatestOtoslottoDraw();
   assertEquals(r?.drawKey, "2026-14");
+  assertEquals(r?.winningNumbers, [36, 45, 50, 67, 77]);
+  assertEquals(typeof r?.resultSource, "string");
+});
+
+Deno.test("BetHuOtoslottoFetcher parses magayo html source", async () => {
+  const fetcher = new BetHuOtoslottoFetcher({
+    url: "https://www.magayo.com/lotto/hungary/otoslotto-results/",
+    fetchImpl: () =>
+      Promise.resolve(
+        new Response(sampleMagayoHtml, {
+          status: 200,
+          headers: { "content-type": "text/html" },
+        }),
+      ),
+  });
+  const r = await fetcher.fetchLatestOtoslottoDraw();
+  assertEquals(r?.drawKey, "2026-04-04");
   assertEquals(r?.winningNumbers, [36, 45, 50, 67, 77]);
   assertEquals(typeof r?.resultSource, "string");
 });
