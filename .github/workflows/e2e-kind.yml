@@ -47,7 +47,7 @@ jobs:
           sudo mv kind-linux-amd64 /usr/local/bin/kind
 
       - name: Install Helm
-        uses: azure/setup-helm@v4
+        uses: azure/setup-helm@v5
         with:
           version: v3.16.3
 
