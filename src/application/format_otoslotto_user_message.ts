@@ -3,7 +3,7 @@ import type { Locale } from "../i18n/mod.ts";
 import { t } from "../i18n/mod.ts";
 import {
   escapeHtml,
-  formatNumbersRowHtml,
+  formatMatchedNumbersRowHtml,
   formatWinningNumbersListHtml,
 } from "../telegram/html_format.ts";
 
@@ -22,7 +22,7 @@ export function formatOtoslottoUserMessage(
       t(locale, "draw_result.line", {
         index: lineIndex + 1,
         hits: hitCount,
-        numbers: formatNumbersRowHtml(playedLine.numbers),
+        numbers: formatMatchedNumbersRowHtml(playedLine.numbers, winningNumbers),
       }),
     );
   }
