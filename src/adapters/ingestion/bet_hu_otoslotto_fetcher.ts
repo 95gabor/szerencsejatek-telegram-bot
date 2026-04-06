@@ -6,13 +6,18 @@ import {
 import { getLogger } from "../../logging/mod.ts";
 import type { DrawResultFetcher } from "../../ports/draw_result_fetcher.ts";
 
-/** Public Ötöslottó history table feed used as default source. */
-export const DEFAULT_OTOSLOTTO_RESULT_JSON_URL = "https://bet.szerencsejatek.hu/cmsfiles/otos.html";
-// Legacy endpoint kept for quick rollback/testing:
+/** Third-party fallback feed used as default source while operator endpoints are geo/IP-restricted. */
+export const DEFAULT_OTOSLOTTO_RESULT_JSON_URL =
+  "https://www.magayo.com/lotto/hungary/otoslotto-results/";
+// Current official endpoint (kept for quick rollback/testing when reachable):
+// https://bet.szerencsejatek.hu/cmsfiles/otos.html
+// Legacy official JSON endpoint:
 // https://bet.szerencsejatek.hu/PublicInfo/ResultJSON.aspx?game=LOTTO5&query=last
 
 const RESULT_SOURCE_LABEL_JSON = "bet.szerencsejatek.hu PublicInfo ResultJSON (LOTTO5&query=last)";
 const RESULT_SOURCE_LABEL_HTML = "bet.szerencsejatek.hu cmsfiles/otos.html";
+const RESULT_SOURCE_LABEL_THIRD_PARTY =
+  "magayo.com Hungary Otoslotto results (third-party fallback)";
 
 function isRecord(v: unknown): v is Record<string, unknown> {
   return v !== null && typeof v === "object" && !Array.isArray(v);
@@ -99,6 +104,56 @@ export function parseBetHuOtoslottoLatestFromHtml(
   return null;
 }
 
+function parseEnglishDateToDrawKey(dateText: string): string | null {
+  const m = dateText.trim().match(/^(\d{1,2})\s+([A-Za-z]+)\s+(\d{4})$/);
+  if (!m) return null;
+  const day = Number.parseInt(m[1] ?? "", 10);
+  const monthName = (m[2] ?? "").toLowerCase();
+  const year = Number.parseInt(m[3] ?? "", 10);
+  const monthByName: Record<string, number> = {
+    january: 1,
+    february: 2,
+    march: 3,
+    april: 4,
+    may: 5,
+    june: 6,
+    july: 7,
+    august: 8,
+    september: 9,
+    october: 10,
+    november: 11,
+    december: 12,
+  };
+  const month = monthByName[monthName];
+  if (!Number.isInteger(year) || !Number.isInteger(day) || !month || day < 1 || day > 31) {
+    return null;
+  }
+  return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+}
+
+/**
+ * Parses latest draw from `magayo.com/lotto/hungary/otoslotto-results/`.
+ */
+export function parseMagayoOtoslottoLatestFromHtml(
+  html: string,
+): { drawKey: string; winningNumbers: number[] } | null {
+  const anchor = html.indexOf("Latest Otoslotto Results");
+  const slice = anchor >= 0 ? html.slice(anchor, anchor + 7000) : html;
+  const dateMatch = slice.match(/<h5>\s*([0-9]{1,2}\s+[A-Za-z]+\s+[0-9]{4})\s*\([^)]+\)\s*<\/h5>/i) ??
+    slice.match(/<h5>\s*([0-9]{1,2}\s+[A-Za-z]+\s+[0-9]{4})\s*<\/h5>/i);
+  const drawKey = parseEnglishDateToDrawKey(dateMatch?.[1] ?? "");
+  if (!drawKey) {
+    return null;
+  }
+  const winningNumbers = [...slice.matchAll(/show_ball\.php\?p1=M(?:&amp;|&)p2=(\d{1,2})/gi)]
+    .slice(0, 5)
+    .map((m) => Number.parseInt(m[1] ?? "", 10));
+  if (winningNumbers.length !== 5 || winningNumbers.some((n) => !Number.isInteger(n))) {
+    return null;
+  }
+  return { drawKey, winningNumbers };
+}
+
 export type BetHuOtoslottoFetcherOptions = {
   url: string;
   /** Injected for tests. */
@@ -106,7 +161,7 @@ export type BetHuOtoslottoFetcherOptions = {
 };
 
 /**
- * Fetches latest Ötöslottó draw from operator public feeds.
+ * Fetches latest Ötöslottó draw from configured source URL (official or third-party).
  */
 export class BetHuOtoslottoFetcher implements DrawResultFetcher {
   private readonly url: string;
@@ -129,7 +184,7 @@ export class BetHuOtoslottoFetcher implements DrawResultFetcher {
     try {
       res = await this.fetchImpl(this.url, {
         headers: {
-          Accept: "application/json",
+          Accept: "text/html,application/json;q=0.9,*/*;q=0.8",
           "User-Agent": "szerencsejatek-telegram-bot/1.0 (Ötöslottó ingestion)",
         },
       });
@@ -174,6 +229,10 @@ export class BetHuOtoslottoFetcher implements DrawResultFetcher {
     if (!parsed) {
       parsed = parseBetHuOtoslottoLatestFromHtml(body);
       resultSource = RESULT_SOURCE_LABEL_HTML;
+    }
+    if (!parsed) {
+      parsed = parseMagayoOtoslottoLatestFromHtml(body);
+      resultSource = RESULT_SOURCE_LABEL_THIRD_PARTY;
     }
     if (!parsed) {
       log.warn("ingestion.otoslotto.unexpected_shape", {
