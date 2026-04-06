@@ -139,8 +139,9 @@ export function parseMagayoOtoslottoLatestFromHtml(
 ): { drawKey: string; winningNumbers: number[] } | null {
   const anchor = html.indexOf("Latest Otoslotto Results");
   const slice = anchor >= 0 ? html.slice(anchor, anchor + 7000) : html;
-  const dateMatch = slice.match(/<h5>\s*([0-9]{1,2}\s+[A-Za-z]+\s+[0-9]{4})\s*\([^)]+\)\s*<\/h5>/i) ??
-    slice.match(/<h5>\s*([0-9]{1,2}\s+[A-Za-z]+\s+[0-9]{4})\s*<\/h5>/i);
+  const dateMatch =
+    slice.match(/<h5>\s*([0-9]{1,2}\s+[A-Za-z]+\s+[0-9]{4})\s*\([^)]+\)\s*<\/h5>/i) ??
+      slice.match(/<h5>\s*([0-9]{1,2}\s+[A-Za-z]+\s+[0-9]{4})\s*<\/h5>/i);
   const drawKey = parseEnglishDateToDrawKey(dateMatch?.[1] ?? "");
   if (!drawKey) {
     return null;
