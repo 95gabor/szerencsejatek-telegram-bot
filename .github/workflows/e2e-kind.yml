@@ -38,7 +38,7 @@ jobs:
           deno-version: v2.7.7
 
       - name: Install kubectl
-        uses: azure/setup-kubectl@v4
+        uses: azure/setup-kubectl@v5
 
       - name: Install kind
         run: |
