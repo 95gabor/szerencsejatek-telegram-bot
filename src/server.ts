@@ -173,15 +173,8 @@ if (denoCronResultCheckEnabled) {
     });
     Deno.exit(1);
   }
-  if (!webhookBaseUrl) {
-    log.error("cron.draw_update.missing_webhook_url", {
-      hint: "CRON_RESULT_CHECK_ENABLED=true requires WEBHOOK_URL (POST target for draw check).",
-    });
-    Deno.exit(1);
-  }
   const cronName = "otoslotto-hourly-draw-update";
   const cronSchedule = "0 * * * *";
-  const drawCheckPostUrl = `${webhookBaseUrl}/`;
   denoCron(cronName, cronSchedule, async () => {
     const event = createCloudEvent<DrawUpdateRequestedData>({
       id: crypto.randomUUID(),
@@ -191,27 +184,11 @@ if (denoCronResultCheckEnabled) {
       data: { gameId },
     });
     try {
-      const res = await fetch(drawCheckPostUrl, {
-        method: "POST",
-        headers: {
-          "content-type": "application/cloudevents+json",
-        },
-        body: JSON.stringify(event),
-      });
-      if (!res.ok) {
-        const bodyText = await res.text();
-        log.error("cron.draw_update.http_failed", {
-          cron_name: cronName,
-          http_status: res.status,
-          body_preview: bodyText.slice(0, 500),
-        });
-        return;
-      }
+      await dispatchPipelineEvent(event, pipelineDeps);
       log.info("cron.draw_update.completed", {
         cron_name: cronName,
         cron_schedule: cronSchedule,
         game_id: gameId,
-        post_url: drawCheckPostUrl,
       });
     } catch (error) {
       log.error("cron.draw_update.failed", {
@@ -224,7 +201,6 @@ if (denoCronResultCheckEnabled) {
     cron_name: cronName,
     cron_schedule: cronSchedule,
     game_id: gameId,
-    post_url: drawCheckPostUrl,
   });
 }
 

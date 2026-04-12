@@ -100,9 +100,8 @@ startup. Default webhook path: **`/telegram/webhook`** (`TELEGRAM_WEBHOOK_PATH`)
 **`TELEGRAM_BACKGROUND_INIT=true`** to start HTTP health endpoints first and initialize grammY in
 the background (useful when hosting platforms fail warmup if startup blocks on external Telegram API
 calls). In background mode, `GET /healthz` returns **503** until Telegram runtime is ready and
-failed init attempts are retried with backoff. Set **`CRON_RESULT_CHECK_ENABLED=true`** and
-**`WEBHOOK_URL`** for an hourly **Deno Cron** that **`POST`s** the draw-check CloudEvent to your
-public base URL (disabled by default).
+failed init attempts are retried with backoff. Set **`CRON_RESULT_CHECK_ENABLED=true`** for an
+hourly **Deno Cron** that runs the draw-check pipeline in-process (disabled by default).
 
 ### Production (Helm)
 

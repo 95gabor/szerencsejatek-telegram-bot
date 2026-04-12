@@ -57,8 +57,9 @@ For non-command free text messages, the bot replies with the same help content a
 **Implementation:** draws stored via Drizzle persistence (SQLite/libSQL or PostgreSQL selected by
 `DATABASE_URL`); `tryInsertDraw` + unique `(game_id, draw_key)`; pipeline events in
 `src/events/otoslotto_pipeline.ts`. Ingestion: **`BetHuOtoslottoFetcher`** (§7), **manual**
-`draw.result.persist`, **optional Deno Cron** (`CRON_RESULT_CHECK_ENABLED` hourly HTTP `POST` to
-`WEBHOOK_URL/` with `draw.update.requested`), or **stub** in tests (`StubDrawResultFetcher`).
+`draw.result.persist`, **optional Deno Cron** (`CRON_RESULT_CHECK_ENABLED` hourly in-process
+`draw.update.requested` via `dispatchPipelineEvent`), or **stub** in tests
+(`StubDrawResultFetcher`).
 
 ### FR-4 — Match calculation
 

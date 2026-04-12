@@ -50,14 +50,6 @@ const envSchema = z.object({
     (v) => (v === "" || v === undefined ? DEFAULT_OTOSLOTTO_RESULT_JSON_URL : v),
     z.string().url(),
   ),
-}).superRefine((data, ctx) => {
-  if (data.CRON_RESULT_CHECK_ENABLED && !data.WEBHOOK_URL) {
-    ctx.addIssue({
-      code: z.ZodIssueCode.custom,
-      message: "WEBHOOK_URL is required when CRON_RESULT_CHECK_ENABLED is true",
-      path: ["WEBHOOK_URL"],
-    });
-  }
 });
 
 export type AppConfig = z.infer<typeof envSchema>;
