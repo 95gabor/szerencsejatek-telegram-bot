@@ -1,10 +1,11 @@
 import { trace } from "@opentelemetry/api";
 import type { Bot } from "grammy";
+import { formatOtoslottoUserMessage } from "../application/format_otoslotto_user_message.ts";
 import { InvalidOtoslottoLineError, parseOtoslottoLine } from "../domain/otoslotto/mod.ts";
 import type { Locale } from "../i18n/mod.ts";
 import { t } from "../i18n/mod.ts";
 import type { DrawRecordRepository, PlayedLineRepository, UserRepository } from "../ports/mod.ts";
-import { escapeHtml, formatNumbersRowHtml, formatWinningNumbersListHtml } from "./html_format.ts";
+import { escapeHtml, formatNumbersRowHtml } from "./html_format.ts";
 import { replyHtml } from "./reply_html.ts";
 import { getLogger } from "../logging/mod.ts";
 import { telegramCommands } from "../observability/mod.ts";
@@ -89,11 +90,15 @@ export function registerTelegramHandlers(bot: Bot, deps: TelegramBotDeps): void 
       return;
     }
 
+    const playedLines = await lines.listLinesForUser(u.id, gameId);
+    const body = formatOtoslottoUserMessage(
+      locale,
+      latest.drawKey,
+      latest.winningNumbers,
+      playedLines,
+    );
     const text = [
-      t(locale, "draw_result.title", { drawKey: escapeHtml(latest.drawKey) }),
-      "",
-      `<b>${t(locale, "draw_result.winning_numbers_label")}</b>`,
-      formatWinningNumbersListHtml(latest.winningNumbers),
+      body,
       "",
       t(locale, "telegram.last_draw_source", { source: escapeHtml(latest.resultSource) }),
     ].join("\n");

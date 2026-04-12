@@ -1,3 +1,5 @@
+#!/usr/bin/env deno run
+
 /**
  * Triggers the draw pipeline on a running HTTP server: POST a
  * `dev.szerencsejatek.telegram.otoslotto.draw.update.requested.v1` CloudEvent to `POST /`

@@ -1,9 +1,10 @@
-import { countHits, type OtoslottoLine } from "../domain/otoslotto/mod.ts";
+import { countHits, matchedNumbersAscending, type OtoslottoLine } from "../domain/otoslotto/mod.ts";
 import type { Locale } from "../i18n/mod.ts";
 import { t } from "../i18n/mod.ts";
 import {
   escapeHtml,
   formatMatchedNumbersRowHtml,
+  formatNumbersRowHtml,
   formatWinningNumbersListHtml,
 } from "../telegram/html_format.ts";
 
@@ -18,10 +19,13 @@ export function formatOtoslottoUserMessage(
   for (let lineIndex = 0; lineIndex < playedLines.length; lineIndex++) {
     const playedLine = playedLines[lineIndex];
     const hitCount = countHits(playedLine.numbers, winningNumbers);
+    const matchedAsc = matchedNumbersAscending(playedLine.numbers, winningNumbers);
+    const matchedAscHtml = matchedAsc.length > 0 ? formatNumbersRowHtml(matchedAsc) : "—";
     lineLines.push(
       t(locale, "draw_result.line", {
         index: lineIndex + 1,
         hits: hitCount,
+        matched_asc: matchedAscHtml,
         numbers: formatMatchedNumbersRowHtml(playedLine.numbers, winningNumbers),
       }),
     );

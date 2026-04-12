@@ -57,8 +57,8 @@ For non-command free text messages, the bot replies with the same help content a
 **Implementation:** draws stored via Drizzle persistence (SQLite/libSQL or PostgreSQL selected by
 `DATABASE_URL`); `tryInsertDraw` + unique `(game_id, draw_key)`; pipeline events in
 `src/events/otoslotto_pipeline.ts`. Ingestion: **`BetHuOtoslottoFetcher`** (§7), **manual**
-`draw.result.persist`, **optional in-process Deno Cron** (`CRON_RESULT_CHECK_ENABLED` hourly), or
-**stub** in tests (`StubDrawResultFetcher`).
+`draw.result.persist`, **optional Deno Cron** (`CRON_RESULT_CHECK_ENABLED` hourly HTTP `POST` to
+`WEBHOOK_URL/` with `draw.update.requested`), or **stub** in tests (`StubDrawResultFetcher`).
 
 ### FR-4 — Match calculation
 
@@ -66,20 +66,23 @@ For non-command free text messages, the bot replies with the same help content a
   - **MVP**: count of matching main numbers (order-independent).
   - **Later**: map hits to **prize tiers** per official rules (requires full rule engine per game).
 
-**Implementation:** `countHits` + `formatOtoslottoUserMessage` (HTML for Telegram `parse_mode`).
+**Implementation:** `countHits`, `matchedNumbersAscending`, `formatOtoslottoUserMessage` (HTML for
+Telegram `parse_mode`).
 
 ### FR-5 — Notifications
 
 - After new results are processed, send users a message containing:
   - Game name and draw identifier (date / draw number).
   - Winning numbers (and supplementary numbers if applicable).
-  - For each stored line (or an aggregate): hits and/or tier.
+  - For each stored line (or an aggregate): hits and/or tier; **MVP** also lists **matched main
+    numbers sorted ascending** next to the hit count.
 
 **Implementation:** `OutboundNotifier`; Telegram adapter uses **HTML** parse mode; messages built
 via `src/i18n/` (`t()`, locale files) and `format_otoslotto_user_message.ts`. **Formatting:** use
-`<code>` for **numeric** values; in draw notifications, highlight matched played numbers with
-`<b>...</b>` while keeping each number in `<code>...</code>`; do **not** wrap **slash-commands** in
-`<code>` (product rule).
+`<code>` for **numeric** values; show **találat** count plus **egyező (növ.)** as spaced `<code>`
+blocks; full szelvény row still highlights matches with `<b>...</b>` around `<code>`; do **not**
+wrap **slash-commands** in `<code>` (product rule). **`/result`** uses the same formatter as
+post-draw notifications (plus source line).
 
 ### FR-6 — Opt out
 
@@ -137,21 +140,21 @@ The pipeline supports **manual** or **fetcher-driven** paths into `draw.result.p
 | Storage               | **Drizzle** persistence with backend selected by `DATABASE_URL`: **SQLite/libSQL** (`file:`, `libsql:`, `https:`, `wss:`) or **PostgreSQL** (`postgres://`, `postgresql://`). |
 | User-facing language  | **Hungarian** for v1 (`NFR-4`).                                                                                                                                               |
 | Results source (prod) | **Ötöslottó:** `BetHuOtoslottoFetcher` + `OTOSLOTTO_RESULT_JSON_URL` (default: magayo third-party fallback; override to official endpoint when reachable).                    |
-| Hosting (prod)        | **Open** — VPS, Deno Deploy, or **Kubernetes** (Helm default: long polling + internal HTTP + CronJob; optional webhook / Knative; optional in-process Deno Cron).             |
+| Hosting (prod)        | **Open** — VPS, Deno Deploy, or **Kubernetes** (Helm default: long polling + internal HTTP + CronJob; optional webhook / Knative; optional Deno Cron POST to `WEBHOOK_URL/`). |
 
 ## 9. Traceability (requirements → code)
 
-| ID    | Primary locations                                                                                                                                                 |
-| ----- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| FR-1  | `src/adapters/persistence/drizzle/user_repository.ts`, `register_handlers` → `upsertUser`                                                                         |
-| FR-2  | `src/telegram/register_handlers.ts`, `src/domain/otoslotto/line.ts`, `played_line_repository`                                                                     |
-| FR-3  | `BetHuOtoslottoFetcher`, `handle_draw_update_requested`, `handle_draw_result_persist`, `DrizzleDrawRecordRepository`, `src/server.ts`                             |
-| FR-4  | `src/domain/otoslotto/match.ts`, `format_otoslotto_user_message.ts`                                                                                               |
-| FR-5  | `handle_draw_result_stored`, `handle_user_notification_requested`, `TelegramOutboundNotifier`                                                                     |
-| FR-6  | _Not implemented_                                                                                                                                                 |
-| NFR-3 | `src/observability/`, `src/logging/`, `src/server.ts`, `src/application/dispatch.ts`, `register_handlers` — [ADR 0007](adr/0007-opentelemetry-metrics-tracing.md) |
-| NFR-4 | `src/i18n/`, `src/telegram/translate_line_error.ts`                                                                                                               |
-| NFR-5 | `src/config/env.ts`, [ADR 0006](adr/0006-zod-config-and-i18n.md)                                                                                                  |
+| ID    | Primary locations                                                                                                                                                                                      |
+| ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| FR-1  | `src/adapters/persistence/drizzle/user_repository.ts`, `register_handlers` → `upsertUser`                                                                                                              |
+| FR-2  | `src/telegram/register_handlers.ts`, `src/domain/otoslotto/line.ts`, `played_line_repository`                                                                                                          |
+| FR-3  | `BetHuOtoslottoFetcher`, `handle_draw_update_requested`, `handle_draw_result_persist`, `DrizzleDrawRecordRepository`, `src/server.ts`; `/result` → `formatOtoslottoUserMessage` in `register_handlers` |
+| FR-4  | `src/domain/otoslotto/match.ts`, `format_otoslotto_user_message.ts`                                                                                                                                    |
+| FR-5  | `handle_draw_result_stored`, `handle_user_notification_requested`, `TelegramOutboundNotifier`                                                                                                          |
+| FR-6  | _Not implemented_                                                                                                                                                                                      |
+| NFR-3 | `src/observability/`, `src/logging/`, `src/server.ts`, `src/application/dispatch.ts`, `register_handlers` — [ADR 0007](adr/0007-opentelemetry-metrics-tracing.md)                                      |
+| NFR-4 | `src/i18n/`, `src/telegram/translate_line_error.ts`                                                                                                                                                    |
+| NFR-5 | `src/config/env.ts`, [ADR 0006](adr/0006-zod-config-and-i18n.md)                                                                                                                                       |
 
 ## 10. Telegram UX (v1)
 
@@ -160,8 +163,8 @@ The pipeline supports **manual** or **fetcher-driven** paths into `draw.result.p
   `deploy/helm/szerencsejatek-telegram-bot/README.md`.
 - **Replies:** HTML (`parse_mode: "HTML"`); lists and bold for structure; **numbers** in `<code>`,
   **not** slash-commands (see FR-5).
-- **`/result`:** last row in `draws` for `GAME_ID` by `created_at` — informational only until a
-  production ingestion strategy exists (§7).
+- **`/result`:** latest stored draw for `GAME_ID`; same per-line találat + egyező (növ.) + szelvény
+  formatting as draw notifications, plus **forrás** line (§7).
 - **Non-command text:** replies with the `/help` content so users quickly recover to supported
   command flows.
 
@@ -177,5 +180,5 @@ The pipeline supports **manual** or **fetcher-driven** paths into `draw.result.p
 ---
 
 _Last updated: hosting / transport aligned with Helm defaults (long polling, CronJob, ClusterIP) and
-optional in-process Deno Cron; requirements traceability, Telegram/HTML/i18n, NFR-5; align with
-pipeline and `docs/adr/`._
+optional Deno Cron (HTTP CloudEvent to `WEBHOOK_URL/`); requirements traceability,
+Telegram/HTML/i18n, NFR-5; align with pipeline and `docs/adr/`._

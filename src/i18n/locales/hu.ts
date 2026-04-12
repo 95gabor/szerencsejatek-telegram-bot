@@ -8,7 +8,7 @@ export const huMessages = {
     "• /add <code>1</code> <code>2</code> <code>3</code> <code>4</code> <code>5</code> — öt különböző szám (1–90) szóközzel\n" +
     "• /lines — mentett soraid listája\n" +
     "• /remove &lt;sorszám&gt; — törlés (a /lines szerinti sorszám, pl. /remove <code>1</code>)\n" +
-    "• /result — utolsó rögzített sorsolási eredmény a botban\n" +
+    "• /result — utolsó rögzített eredmény; mentett szelvényeidre találatszám és egyező számok (növekvő)\n" +
     "• /help — részletes útmutató",
 
   "telegram.help":
@@ -17,7 +17,7 @@ export const huMessages = {
     "<b>Új szelvény</b>\n" +
     "/add <code>7</code> <code>14</code> <code>23</code> <code>41</code> <code>88</code>\n\n" +
     "<b>Szelvényeid</b>\n/lines — sorszámozott lista.\n\n" +
-    "<b>Utolsó eredmény</b>\n/result — a bot által utoljára tárolt hivatalos nyerőszámok (ha már beérkeztek).\n\n" +
+    "<b>Utolsó eredmény</b>\n/result — utolsó tárolt nyerőszámok; ha van mentett szelvényed, soronként találat és egyező számok növekvő sorrendben.\n\n" +
     "<b>Törlés</b>\n/remove <code>1</code> törli az 1. sort a listából (a /lines szerinti sorszámot).\n\n" +
     "A bot nem fogad fogadást; csak tárolja a megadott számokat és összeveti a nyerőszámokkal.",
 
@@ -56,7 +56,8 @@ export const huMessages = {
 
   "draw_result.winning_numbers_label": "Nyerőszámok",
 
-  "draw_result.line": "<b>{{index}}.</b> sor · <b>{{hits}}</b> találat · {{numbers}}",
+  "draw_result.line":
+    "<b>{{index}}.</b> sor · <b>{{hits}}</b> találat · egyező (növ.): {{matched_asc}}\nSzelvény: {{numbers}}",
 } as const;
 
 export type MessageKey = keyof typeof huMessages;
