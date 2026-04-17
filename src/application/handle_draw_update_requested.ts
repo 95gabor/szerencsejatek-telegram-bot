@@ -37,6 +37,7 @@ export async function handleDrawUpdateRequested(
     drawKey: fetchResult.drawKey,
     winningNumbers: winningNumbers as DrawResultPersistData["winningNumbers"],
     resultSource: fetchResult.resultSource,
+    prizeAmountsByHits: fetchResult.prizeAmountsByHits,
   };
 
   const persistEvent = createCloudEvent<DrawResultPersistData>({

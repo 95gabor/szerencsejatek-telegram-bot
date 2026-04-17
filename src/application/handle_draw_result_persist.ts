@@ -36,6 +36,7 @@ export async function handleDrawResultPersist(
     drawKey: persistPayload.drawKey,
     winningNumbers,
     resultSource: persistPayload.resultSource,
+    prizeAmountsByHits: persistPayload.prizeAmountsByHits,
   });
 
   if (!wasInserted) {
@@ -47,6 +48,7 @@ export async function handleDrawResultPersist(
     drawKey: persistPayload.drawKey,
     winningNumbers: winningNumbers as DrawResultStoredData["winningNumbers"],
     resultSource: persistPayload.resultSource,
+    prizeAmountsByHits: persistPayload.prizeAmountsByHits,
   };
 
   const storedEvent = createCloudEvent<DrawResultStoredData>({

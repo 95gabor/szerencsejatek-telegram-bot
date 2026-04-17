@@ -1,4 +1,5 @@
 import { type CloudEvent, CLOUDEVENTS_SPEC_VERSION, createCloudEvent } from "./cloudevents.ts";
+import type { OtoslottoPrizeAmountsByHits } from "../domain/otoslotto/mod.ts";
 
 /** Cron/tick: fetch latest official numbers from the configured source. */
 export const EVENT_TYPE_DRAW_UPDATE_REQUESTED =
@@ -25,6 +26,7 @@ export type DrawResultPersistData = {
   drawKey: string;
   winningNumbers: [number, number, number, number, number];
   resultSource: string;
+  prizeAmountsByHits?: OtoslottoPrizeAmountsByHits;
 };
 
 export type DrawResultStoredData = DrawResultPersistData;
@@ -42,6 +44,22 @@ export type UserNotificationRequestedEvent = CloudEvent<UserNotificationRequeste
 
 function hasRecordData(data: unknown): data is Record<string, unknown> {
   return data !== null && data !== undefined && typeof data === "object";
+}
+
+function isPrizeAmountsByHits(value: unknown): value is OtoslottoPrizeAmountsByHits {
+  if (value === undefined) {
+    return true;
+  }
+  if (!hasRecordData(value) || Array.isArray(value)) {
+    return false;
+  }
+  const allowedKeys = new Set(["2", "3", "4", "5"]);
+  for (const [key, amount] of Object.entries(value)) {
+    if (!allowedKeys.has(key) || typeof amount !== "string") {
+      return false;
+    }
+  }
+  return true;
 }
 
 export function isDrawUpdateRequestedEvent(
@@ -64,7 +82,8 @@ export function isDrawResultPersistEvent(
     typeof data.drawKey === "string" &&
     typeof data.resultSource === "string" &&
     Array.isArray(data.winningNumbers) &&
-    data.winningNumbers.length === 5;
+    data.winningNumbers.length === 5 &&
+    isPrizeAmountsByHits(data.prizeAmountsByHits);
 }
 
 export function isDrawResultStoredEvent(
@@ -78,7 +97,8 @@ export function isDrawResultStoredEvent(
     typeof data.drawKey === "string" &&
     typeof data.resultSource === "string" &&
     Array.isArray(data.winningNumbers) &&
-    data.winningNumbers.length === 5;
+    data.winningNumbers.length === 5 &&
+    isPrizeAmountsByHits(data.prizeAmountsByHits);
 }
 
 export function isUserNotificationRequestedEvent(

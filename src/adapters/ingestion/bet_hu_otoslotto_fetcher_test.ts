@@ -26,6 +26,14 @@ const sampleJson = {
             { number: { Space: "", Local: "" }, type: "5", xml: "89" },
           ],
         },
+        "win-range-list": {
+          "win-range": [
+            { type: "5", amount: { xml: "0 Ft" } },
+            { type: "4", amount: { xml: "2 494 605 Ft" } },
+            { type: "3", amount: { xml: "29 850 Ft" } },
+            { type: "2", amount: { xml: "3 385 Ft" } },
+          ],
+        },
       },
     },
   ],
@@ -71,6 +79,12 @@ Deno.test("parseBetHuLottery5LastDraw extracts draw_id and five xml numbers", ()
   const p = parseBetHuLottery5LastDraw(sampleJson);
   assertEquals(p?.drawKey, "36126");
   assertEquals(p?.winningNumbers, [7, 18, 22, 52, 89]);
+  assertEquals(p?.prizeAmountsByHits, {
+    5: "0 Ft",
+    4: "2 494 605 Ft",
+    3: "29 850 Ft",
+    2: "3 385 Ft",
+  });
 });
 
 Deno.test("parseBetHuLottery5LastDraw returns null for empty game list", () => {
@@ -82,6 +96,12 @@ Deno.test("parseBetHuOtoslottoLatestFromHtml extracts latest row values", () => 
   const p = parseBetHuOtoslottoLatestFromHtml(sampleHtml);
   assertEquals(p?.drawKey, "2026-14");
   assertEquals(p?.winningNumbers, [36, 45, 50, 67, 77]);
+  assertEquals(p?.prizeAmountsByHits, {
+    5: "0 Ft",
+    4: "2 494 605 Ft",
+    3: "29 850 Ft",
+    2: "3 385 Ft",
+  });
 });
 
 Deno.test("parseMagayoOtoslottoLatestFromHtml extracts latest row values", () => {
@@ -105,6 +125,12 @@ Deno.test("BetHuOtoslottoFetcher uses fetchImpl and returns validated tuple", as
   assertEquals(r?.drawKey, "36126");
   assertEquals(r?.winningNumbers, [7, 18, 22, 52, 89]);
   assertEquals(typeof r?.resultSource, "string");
+  assertEquals(r?.prizeAmountsByHits, {
+    5: "0 Ft",
+    4: "2 494 605 Ft",
+    3: "29 850 Ft",
+    2: "3 385 Ft",
+  });
 });
 
 Deno.test("BetHuOtoslottoFetcher falls back to html parser", async () => {
@@ -122,6 +148,12 @@ Deno.test("BetHuOtoslottoFetcher falls back to html parser", async () => {
   assertEquals(r?.drawKey, "2026-14");
   assertEquals(r?.winningNumbers, [36, 45, 50, 67, 77]);
   assertEquals(typeof r?.resultSource, "string");
+  assertEquals(r?.prizeAmountsByHits, {
+    5: "0 Ft",
+    4: "2 494 605 Ft",
+    3: "29 850 Ft",
+    2: "3 385 Ft",
+  });
 });
 
 Deno.test("BetHuOtoslottoFetcher parses magayo html source", async () => {
@@ -139,4 +171,5 @@ Deno.test("BetHuOtoslottoFetcher parses magayo html source", async () => {
   assertEquals(r?.drawKey, "2026-04-04");
   assertEquals(r?.winningNumbers, [36, 45, 50, 67, 77]);
   assertEquals(typeof r?.resultSource, "string");
+  assertEquals(r?.prizeAmountsByHits, undefined);
 });

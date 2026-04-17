@@ -58,6 +58,12 @@ Deno.test({
           drawKey,
           winningNumbers: [...otoslottoFive],
           resultSource: "e2e",
+          prizeAmountsByHits: {
+            5: "123 456 789 Ft",
+            4: "1 234 567 Ft",
+            3: "30 000 Ft",
+            2: "3 000 Ft",
+          },
         });
       },
     };
@@ -106,6 +112,12 @@ Deno.test({
       drawKey,
       [...otoslottoFive],
       [{ numbers: [...otoslottoFive] }],
+      {
+        5: "123 456 789 Ft",
+        4: "1 234 567 Ft",
+        3: "30 000 Ft",
+        2: "3 000 Ft",
+      },
     );
     assertEquals(sentMessages[0]?.text, expected);
   } finally {

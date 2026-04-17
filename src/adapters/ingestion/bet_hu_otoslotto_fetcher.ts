@@ -1,6 +1,8 @@
 import {
   InvalidOtoslottoLineError,
+  OTOSLOTTO_PRIZE_HIT_COUNTS,
   type OtoslottoLine,
+  type OtoslottoPrizeAmountsByHits,
   parseOtoslottoLine,
 } from "../../domain/otoslotto/mod.ts";
 import { getLogger } from "../../logging/mod.ts";
@@ -23,13 +25,83 @@ function isRecord(v: unknown): v is Record<string, unknown> {
   return v !== null && typeof v === "object" && !Array.isArray(v);
 }
 
+function normalizePrizeAmount(value: string): string | null {
+  const normalized = value.replace(/\s+/g, " ").trim();
+  return normalized.length > 0 ? normalized : null;
+}
+
+function tryReadText(value: unknown): string | null {
+  if (typeof value === "string") {
+    return value;
+  }
+  if (typeof value === "number") {
+    return String(value);
+  }
+  if (isRecord(value) && typeof value.xml === "string") {
+    return value.xml;
+  }
+  return null;
+}
+
+function tryReadHitCount(value: unknown): 2 | 3 | 4 | 5 | null {
+  const text = tryReadText(value);
+  if (!text) {
+    return null;
+  }
+  const parsed = Number.parseInt(text, 10);
+  return parsed === 2 || parsed === 3 || parsed === 4 || parsed === 5 ? parsed : null;
+}
+
+function parseBetHuLottery5PrizeAmounts(entry: Record<string, unknown>):
+  | OtoslottoPrizeAmountsByHits
+  | undefined {
+  const draw = entry.draw;
+  if (!isRecord(draw)) {
+    return undefined;
+  }
+  const winRangeList = draw["win-range-list"];
+  if (!isRecord(winRangeList)) {
+    return undefined;
+  }
+  const ranges = winRangeList["win-range"];
+  if (!Array.isArray(ranges)) {
+    return undefined;
+  }
+  const parsed: OtoslottoPrizeAmountsByHits = {};
+  for (const range of ranges) {
+    if (!isRecord(range)) {
+      continue;
+    }
+    const hitCount = tryReadHitCount(
+      range.type ?? range.hits ?? range.match ?? range.level ?? range.id,
+    );
+    if (!hitCount) {
+      continue;
+    }
+    const rawAmount = tryReadText(
+      range.prize ?? range.amount ?? range.sum ?? range.value ?? range["prize-amount"],
+    );
+    if (!rawAmount) {
+      continue;
+    }
+    const amount = normalizePrizeAmount(rawAmount);
+    if (!amount) {
+      continue;
+    }
+    parsed[hitCount] = amount;
+  }
+  return Object.keys(parsed).length > 0 ? parsed : undefined;
+}
+
 /**
  * Parses the `game[]` entry for Ötöslottó from
  * `ResultJSON.aspx?game=LOTTO5&query=last` (structure may evolve — keep defensive).
  */
 export function parseBetHuLottery5LastDraw(
   json: unknown,
-): { drawKey: string; winningNumbers: number[] } | null {
+):
+  | { drawKey: string; winningNumbers: number[]; prizeAmountsByHits?: OtoslottoPrizeAmountsByHits }
+  | null {
   if (!isRecord(json)) return null;
   const games = json["game"];
   if (!Array.isArray(games) || games.length === 0) return null;
@@ -60,7 +132,11 @@ export function parseBetHuLottery5LastDraw(
     winningNumbers.push(n);
   }
 
-  return { drawKey, winningNumbers };
+  return {
+    drawKey,
+    winningNumbers,
+    prizeAmountsByHits: parseBetHuLottery5PrizeAmounts(entry),
+  };
 }
 
 function normalizeHtmlCellText(v: string): string {
@@ -78,7 +154,9 @@ function normalizeHtmlCellText(v: string): string {
  */
 export function parseBetHuOtoslottoLatestFromHtml(
   html: string,
-): { drawKey: string; winningNumbers: number[] } | null {
+):
+  | { drawKey: string; winningNumbers: number[]; prizeAmountsByHits?: OtoslottoPrizeAmountsByHits }
+  | null {
   const rowRegex = /<tr[^>]*>([\s\S]*?)<\/tr>/gi;
   for (const rowMatch of html.matchAll(rowRegex)) {
     const rowHtml = rowMatch[1] ?? "";
@@ -96,9 +174,27 @@ export function parseBetHuOtoslottoLatestFromHtml(
     if (winningNumbers.length !== 5 || winningNumbers.some((n) => !Number.isInteger(n))) {
       continue;
     }
+    const prizeAmountsByHits: OtoslottoPrizeAmountsByHits = {};
+    const winningNumbersStartIdx = cells.length - 5;
+    for (let i = 0; i < OTOSLOTTO_PRIZE_HIT_COUNTS.length; i++) {
+      const hitCount = OTOSLOTTO_PRIZE_HIT_COUNTS[i]!;
+      const amountCellIdx = winningNumbersStartIdx - 7 + (i * 2);
+      const rawAmount = cells[amountCellIdx];
+      if (!rawAmount) {
+        continue;
+      }
+      const amount = normalizePrizeAmount(rawAmount);
+      if (!amount) {
+        continue;
+      }
+      prizeAmountsByHits[hitCount] = amount;
+    }
     return {
       drawKey: `${year}-${String(week).padStart(2, "0")}`,
       winningNumbers,
+      prizeAmountsByHits: Object.keys(prizeAmountsByHits).length > 0
+        ? prizeAmountsByHits
+        : undefined,
     };
   }
   return null;
@@ -178,6 +274,7 @@ export class BetHuOtoslottoFetcher implements DrawResultFetcher {
       drawKey: string;
       winningNumbers: OtoslottoLine;
       resultSource: string;
+      prizeAmountsByHits?: OtoslottoPrizeAmountsByHits;
     } | null
   > {
     const log = getLogger();
@@ -216,7 +313,13 @@ export class BetHuOtoslottoFetcher implements DrawResultFetcher {
     }
 
     const contentType = res.headers.get("content-type") ?? "";
-    let parsed: { drawKey: string; winningNumbers: number[] } | null = null;
+    let parsed:
+      | {
+        drawKey: string;
+        winningNumbers: number[];
+        prizeAmountsByHits?: OtoslottoPrizeAmountsByHits;
+      }
+      | null = null;
     let resultSource = RESULT_SOURCE_LABEL_HTML;
     if (contentType.includes("json")) {
       try {
@@ -258,6 +361,7 @@ export class BetHuOtoslottoFetcher implements DrawResultFetcher {
       drawKey: parsed.drawKey,
       winningNumbers,
       resultSource,
+      prizeAmountsByHits: parsed.prizeAmountsByHits,
     };
   }
 }

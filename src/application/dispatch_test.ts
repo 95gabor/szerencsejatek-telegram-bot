@@ -26,6 +26,12 @@ Deno.test("pipeline: update → persist → stored → notification", async () =
         drawKey: "2026-W12",
         winningNumbers: [7, 18, 22, 52, 89],
         resultSource: "test",
+        prizeAmountsByHits: {
+          5: "0 Ft",
+          4: "2 494 605 Ft",
+          3: "29 850 Ft",
+          2: "3 385 Ft",
+        },
       });
     },
   };
@@ -110,6 +116,12 @@ Deno.test("pipeline: update → persist → stored → notification", async () =
     "2026-W12",
     [7, 18, 22, 52, 89],
     [{ numbers: [7, 18, 22, 52, 89] }],
+    {
+      5: "0 Ft",
+      4: "2 494 605 Ft",
+      3: "29 850 Ft",
+      2: "3 385 Ft",
+    },
   );
   assertEquals(sentMessages[0]?.text, expected);
 });

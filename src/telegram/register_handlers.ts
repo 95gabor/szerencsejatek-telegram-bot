@@ -96,6 +96,7 @@ export function registerTelegramHandlers(bot: Bot, deps: TelegramBotDeps): void 
       latest.drawKey,
       latest.winningNumbers,
       playedLines,
+      latest.prizeAmountsByHits,
     );
     const text = [
       body,
