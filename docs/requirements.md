@@ -8,7 +8,7 @@ as code. Use **FR-** / **NFR-** IDs in commits and reviews where helpful.
 
 A **Telegram bot** that lets users **record which lottery numbers they played** for Szerencsejáték
 Zrt. games. When **new official results** are available, the bot **sends a message** with the
-**winning numbers**, the **weekly prize amounts** for the paid week when available, and a **per-user
+**winning numbers**, the **weekly prize amounts** for the draw week when available, and a **per-user
 summary** of whether their registered lines matched (e.g. number of hits, optional prize tier in
 later phases).
 

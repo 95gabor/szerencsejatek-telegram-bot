@@ -171,10 +171,7 @@ export function parseBetHuLottery5LastDraw(
   }
 
   const prizeAmountsByHits = parseBetHuLottery5PrizeAmounts(entry);
-  const maxWinPrizes = parseBetHuLottery5MaxWinPrizes(entry) ??
-    parseOtoslottoMaxWinPrizes({
-      lastMaxWinPrize: prizeAmountsByHits?.[5],
-    });
+  const maxWinPrizes = parseBetHuLottery5MaxWinPrizes(entry);
   return {
     drawKey,
     winningNumbers,
@@ -247,7 +244,6 @@ export function parseBetHuOtoslottoLatestFromHtml(
       prizeAmountsByHits[hitCount] = amount;
     }
     const maxWinPrizes = parseOtoslottoMaxWinPrizes({
-      lastMaxWinPrize: prizeAmountsByHits[5],
       nextPossibleMaxWinPrize: parseNextPossibleMaxWinPrizeFromHtml(html),
     });
     return {
@@ -433,7 +429,7 @@ export class BetHuOtoslottoFetcher implements DrawResultFetcher {
     }
 
     const maxWinPrizes = parseOtoslottoMaxWinPrizes({
-      lastMaxWinPrize: parsed.lastMaxWinPrize ?? parsed.prizeAmountsByHits?.[5],
+      lastMaxWinPrize: parsed.lastMaxWinPrize,
       nextPossibleMaxWinPrize: parsed.nextPossibleMaxWinPrize,
     });
     return {
