@@ -46,6 +46,8 @@ export type StoredDrawRecord = {
   winningNumbers: OtoslottoLine;
   resultSource: string;
   prizeAmountsByHits?: OtoslottoPrizeAmountsByHits;
+  lastMaxWinPrize?: string;
+  nextPossibleMaxWinPrize?: string;
 };
 
 /** Ensures a draw is processed once and stores official numbers. */
@@ -57,6 +59,8 @@ export interface DrawRecordRepository {
     winningNumbers: OtoslottoLine;
     resultSource: string;
     prizeAmountsByHits?: OtoslottoPrizeAmountsByHits;
+    lastMaxWinPrize?: string;
+    nextPossibleMaxWinPrize?: string;
   }): Promise<boolean>;
 
   /** Most recently stored draw for this game (`created_at` desc), or `null` if none. */

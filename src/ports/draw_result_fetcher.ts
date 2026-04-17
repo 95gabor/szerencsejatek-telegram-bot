@@ -8,6 +8,8 @@ export interface DrawResultFetcher {
       winningNumbers: OtoslottoLine;
       resultSource: string;
       prizeAmountsByHits?: OtoslottoPrizeAmountsByHits;
+      lastMaxWinPrize?: string;
+      nextPossibleMaxWinPrize?: string;
     } | null
   >;
 }

@@ -1,5 +1,6 @@
 import { assertEquals } from "jsr:@std/assert@1/equals";
 import { Bot } from "grammy";
+import type { DrawResultFetcher } from "../ports/draw_result_fetcher.ts";
 import { registerTelegramHandlers } from "./register_handlers.ts";
 import type { DrawRecordRepository, PlayedLineRepository, UserRepository } from "../ports/mod.ts";
 
@@ -8,6 +9,7 @@ type SentMessage = { chatId: number; text: string };
 type HandlerTestOverrides = {
   lines?: PlayedLineRepository;
   draws?: DrawRecordRepository;
+  fetcher?: DrawResultFetcher;
 };
 
 function createDeps(sentMessages: SentMessage[], overrides: HandlerTestOverrides = {}) {
@@ -38,8 +40,14 @@ function createDeps(sentMessages: SentMessage[], overrides: HandlerTestOverrides
       return Promise.resolve(null);
     },
   };
+  const defaultFetcher: DrawResultFetcher = {
+    fetchLatestOtoslottoDraw() {
+      return Promise.resolve(null);
+    },
+  };
   const lines = overrides.lines ?? defaultLines;
   const draws = overrides.draws ?? defaultDraws;
+  const fetcher = overrides.fetcher ?? defaultFetcher;
   const bot = new Bot("123:TEST", {
     botInfo: {
       id: 123,
@@ -66,6 +74,7 @@ function createDeps(sentMessages: SentMessage[], overrides: HandlerTestOverrides
     users,
     lines,
     draws,
+    fetcher,
     gameId: "otoslotto",
     locale: "hu",
   });
@@ -118,6 +127,7 @@ Deno.test("/result includes weekly prize amounts when available", async () => {
         drawKey: "2026-14",
         winningNumbers: [36, 45, 50, 67, 77],
         resultSource: "test-source",
+        lastMaxWinPrize: "0 Ft",
         prizeAmountsByHits: {
           5: "0 Ft",
           4: "2 494 605 Ft",
@@ -156,7 +166,79 @@ Deno.test("/result includes weekly prize amounts when available", async () => {
   });
 
   assertEquals(sentMessages.length, 1);
+  assertEquals(sentMessages[0]?.text.includes("Utolsó max nyeremény: <code>0</code> Ft"), true);
   assertEquals(sentMessages[0]?.text.includes("<b>Heti nyeremények</b>"), true);
   assertEquals(sentMessages[0]?.text.includes("<b>4</b> találat: <code>2 494 605</code> Ft"), true);
   assertEquals(sentMessages[0]?.text.includes("<b>Forrás:</b> test-source"), true);
+});
+
+Deno.test("/jackpot returns last and next possible max win prizes", async () => {
+  const sentMessages: SentMessage[] = [];
+  const fetcher: DrawResultFetcher = {
+    fetchLatestOtoslottoDraw() {
+      return Promise.resolve({
+        drawKey: "2026-14",
+        winningNumbers: [36, 45, 50, 67, 77],
+        resultSource: "test-source",
+        lastMaxWinPrize: "0 Ft",
+        nextPossibleMaxWinPrize: "4 294 967 295 Ft",
+      });
+    },
+  };
+  const bot = createDeps(sentMessages, { fetcher });
+
+  await bot.handleUpdate({
+    update_id: 4,
+    message: {
+      message_id: 4,
+      date: Math.floor(Date.now() / 1000),
+      text: "/jackpot",
+      from: { id: 77, is_bot: false, first_name: "Test" },
+      chat: { id: 77, type: "private", first_name: "Test" },
+      entities: [{ type: "bot_command", offset: 0, length: 8 }],
+    },
+  });
+
+  assertEquals(sentMessages.length, 1);
+  assertEquals(sentMessages[0]?.text.includes("<b>Ötöslottó jackpot</b>"), true);
+  assertEquals(sentMessages[0]?.text.includes("Utolsó max nyeremény: <code>0</code> Ft"), true);
+  assertEquals(
+    sentMessages[0]?.text.includes(
+      "Következő várható max nyeremény: <code>4 294 967 295</code> Ft",
+    ),
+    true,
+  );
+  assertEquals(sentMessages[0]?.text.includes("<b>Forrás:</b> test-source"), true);
+});
+
+Deno.test("/jackpot returns unavailable message when source has no jackpot info", async () => {
+  const sentMessages: SentMessage[] = [];
+  const fetcher: DrawResultFetcher = {
+    fetchLatestOtoslottoDraw() {
+      return Promise.resolve({
+        drawKey: "2026-14",
+        winningNumbers: [36, 45, 50, 67, 77],
+        resultSource: "test-source",
+      });
+    },
+  };
+  const bot = createDeps(sentMessages, { fetcher });
+
+  await bot.handleUpdate({
+    update_id: 5,
+    message: {
+      message_id: 5,
+      date: Math.floor(Date.now() / 1000),
+      text: "/jackpot",
+      from: { id: 88, is_bot: false, first_name: "Test" },
+      chat: { id: 88, type: "private", first_name: "Test" },
+      entities: [{ type: "bot_command", offset: 0, length: 8 }],
+    },
+  });
+
+  assertEquals(sentMessages.length, 1);
+  assertEquals(
+    sentMessages[0]?.text,
+    "A jackpot adatok most nem érhetők el. Próbáld újra később.",
+  );
 });

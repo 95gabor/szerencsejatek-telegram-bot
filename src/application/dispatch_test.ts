@@ -32,6 +32,8 @@ Deno.test("pipeline: update → persist → stored → notification", async () =
           3: "29 850 Ft",
           2: "3 385 Ft",
         },
+        lastMaxWinPrize: "123 456 789 Ft",
+        nextPossibleMaxWinPrize: "4 294 967 295 Ft",
       });
     },
   };
@@ -122,6 +124,7 @@ Deno.test("pipeline: update → persist → stored → notification", async () =
       3: "29 850 Ft",
       2: "3 385 Ft",
     },
+    "123 456 789 Ft",
   );
   assertEquals(sentMessages[0]?.text, expected);
 });

@@ -27,6 +27,8 @@ export type DrawResultPersistData = {
   winningNumbers: [number, number, number, number, number];
   resultSource: string;
   prizeAmountsByHits?: OtoslottoPrizeAmountsByHits;
+  lastMaxWinPrize?: string;
+  nextPossibleMaxWinPrize?: string;
 };
 
 export type DrawResultStoredData = DrawResultPersistData;
@@ -62,6 +64,10 @@ function isPrizeAmountsByHits(value: unknown): value is OtoslottoPrizeAmountsByH
   return true;
 }
 
+function isOptionalString(value: unknown): value is string | undefined {
+  return value === undefined || typeof value === "string";
+}
+
 export function isDrawUpdateRequestedEvent(
   event: CloudEvent<unknown>,
 ): event is DrawUpdateRequestedEvent {
@@ -83,7 +89,9 @@ export function isDrawResultPersistEvent(
     typeof data.resultSource === "string" &&
     Array.isArray(data.winningNumbers) &&
     data.winningNumbers.length === 5 &&
-    isPrizeAmountsByHits(data.prizeAmountsByHits);
+    isPrizeAmountsByHits(data.prizeAmountsByHits) &&
+    isOptionalString(data.lastMaxWinPrize) &&
+    isOptionalString(data.nextPossibleMaxWinPrize);
 }
 
 export function isDrawResultStoredEvent(
@@ -98,7 +106,9 @@ export function isDrawResultStoredEvent(
     typeof data.resultSource === "string" &&
     Array.isArray(data.winningNumbers) &&
     data.winningNumbers.length === 5 &&
-    isPrizeAmountsByHits(data.prizeAmountsByHits);
+    isPrizeAmountsByHits(data.prizeAmountsByHits) &&
+    isOptionalString(data.lastMaxWinPrize) &&
+    isOptionalString(data.nextPossibleMaxWinPrize);
 }
 
 export function isUserNotificationRequestedEvent(

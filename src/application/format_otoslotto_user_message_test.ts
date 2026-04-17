@@ -13,6 +13,7 @@ Deno.test("formatOtoslottoUserMessage shows hit count, matched ascending, and fu
       3: "29 850 Ft",
       2: "3 385 Ft",
     },
+    "3 000 000 000 Ft",
   );
 
   assertEquals(
@@ -26,6 +27,9 @@ Deno.test("formatOtoslottoUserMessage shows hit count, matched ascending, and fu
       "• <code>22</code>",
       "• <code>52</code>",
       "• <code>89</code>",
+      "",
+      "<b>Max nyeremény</b>",
+      "Utolsó max nyeremény: <code>3 000 000 000</code> Ft",
       "",
       "<b>Heti nyeremények</b>",
       "<b>5</b> találat: <code>0</code> Ft",

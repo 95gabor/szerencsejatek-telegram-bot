@@ -64,6 +64,8 @@ Deno.test({
             3: "30 000 Ft",
             2: "3 000 Ft",
           },
+          lastMaxWinPrize: "123 456 789 Ft",
+          nextPossibleMaxWinPrize: "4 294 967 295 Ft",
         });
       },
     };
@@ -118,6 +120,7 @@ Deno.test({
         3: "30 000 Ft",
         2: "3 000 Ft",
       },
+      "123 456 789 Ft",
     );
     assertEquals(sentMessages[0]?.text, expected);
   } finally {

@@ -35,6 +35,7 @@ export function formatOtoslottoUserMessage(
   winningNumbers: OtoslottoLine,
   playedLines: ReadonlyArray<{ numbers: OtoslottoLine }>,
   prizeAmountsByHits?: OtoslottoPrizeAmountsByHits,
+  lastMaxWinPrize?: string,
 ): string {
   const prizeLines: string[] = [];
   for (const hitCount of OTOSLOTTO_PRIZE_HIT_COUNTS) {
@@ -70,6 +71,11 @@ export function formatOtoslottoUserMessage(
     "",
     `<b>${t(locale, "draw_result.winning_numbers_label")}</b>`,
     formatWinningNumbersListHtml(winningNumbers),
+    "",
+    `<b>${t(locale, "draw_result.max_win_label")}</b>`,
+    t(locale, "draw_result.max_win_line", {
+      amount: lastMaxWinPrize ? formatPrizeAmountHtml(lastMaxWinPrize) : "—",
+    }),
     "",
     ...(prizeLines.length > 0
       ? [`<b>${t(locale, "draw_result.prizes_label")}</b>`, ...prizeLines, ""]

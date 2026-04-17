@@ -76,7 +76,7 @@ async function initializeTelegramRuntime(): Promise<void> {
     return;
   }
   const bot = new Bot(botToken);
-  registerTelegramHandlers(bot, { users, lines, draws, gameId, locale });
+  registerTelegramHandlers(bot, { users, lines, draws, fetcher, gameId, locale });
   bot.catch((err) => {
     log.error("telegram.bot.error", {
       error: err instanceof Error ? err.message : String(err),

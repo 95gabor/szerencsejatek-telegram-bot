@@ -3,6 +3,7 @@ import {
   type OtoslottoLine,
   type OtoslottoPrizeAmountsByHits,
   parseOtoslottoLine,
+  parseOtoslottoMaxWinPrizes,
   parseOtoslottoPrizeAmountsByHits,
 } from "../../../domain/otoslotto/mod.ts";
 import type { DrawRecordRepository, StoredDrawRecord } from "../../../ports/mod.ts";
@@ -47,11 +48,18 @@ export class DrizzlePostgresDrawRecordRepository implements DrawRecordRepository
     const prizeAmountsByHits = isRecord(rawPayload)
       ? parseOtoslottoPrizeAmountsByHits(rawPayload.prizeAmountsByHits)
       : undefined;
+    const maxWinPrizes = isRecord(rawPayload)
+      ? parseOtoslottoMaxWinPrizes({
+        lastMaxWinPrize: rawPayload.lastMaxWinPrize,
+        nextPossibleMaxWinPrize: rawPayload.nextPossibleMaxWinPrize,
+      })
+      : undefined;
     return {
       drawKey: r.drawKey,
       winningNumbers,
       resultSource: r.resultSource,
       prizeAmountsByHits,
+      ...maxWinPrizes,
     };
   }
 
@@ -61,12 +69,19 @@ export class DrizzlePostgresDrawRecordRepository implements DrawRecordRepository
     winningNumbers: OtoslottoLine;
     resultSource: string;
     prizeAmountsByHits?: OtoslottoPrizeAmountsByHits;
+    lastMaxWinPrize?: string;
+    nextPossibleMaxWinPrize?: string;
   }): Promise<boolean> {
     const id = crypto.randomUUID();
     const prizeAmountsByHits = parseOtoslottoPrizeAmountsByHits(input.prizeAmountsByHits);
+    const maxWinPrizes = parseOtoslottoMaxWinPrizes({
+      lastMaxWinPrize: input.lastMaxWinPrize,
+      nextPossibleMaxWinPrize: input.nextPossibleMaxWinPrize,
+    });
     const numbersPayload = {
       winningNumbers: [...input.winningNumbers],
       ...(prizeAmountsByHits ? { prizeAmountsByHits } : {}),
+      ...(maxWinPrizes ?? {}),
     };
     const inserted = await this.db
       .insert(draws)
