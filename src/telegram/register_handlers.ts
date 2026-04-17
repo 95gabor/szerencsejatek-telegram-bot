@@ -4,8 +4,13 @@ import { formatOtoslottoUserMessage } from "../application/format_otoslotto_user
 import { InvalidOtoslottoLineError, parseOtoslottoLine } from "../domain/otoslotto/mod.ts";
 import type { Locale } from "../i18n/mod.ts";
 import { t } from "../i18n/mod.ts";
-import type { DrawRecordRepository, PlayedLineRepository, UserRepository } from "../ports/mod.ts";
-import { escapeHtml, formatNumbersRowHtml } from "./html_format.ts";
+import type {
+  DrawRecordRepository,
+  DrawResultFetcher,
+  PlayedLineRepository,
+  UserRepository,
+} from "../ports/mod.ts";
+import { codeHtml, escapeHtml, formatNumbersRowHtml } from "./html_format.ts";
 import { replyHtml } from "./reply_html.ts";
 import { getLogger } from "../logging/mod.ts";
 import { telegramCommands } from "../observability/mod.ts";
@@ -17,6 +22,7 @@ export type TelegramBotDeps = {
   users: UserRepository;
   lines: PlayedLineRepository;
   draws: DrawRecordRepository;
+  fetcher: DrawResultFetcher;
   gameId: string;
   locale: Locale;
 };
@@ -33,8 +39,21 @@ export function isTelegramCommandText(text: string): boolean {
   return firstToken.startsWith("/");
 }
 
+function formatJackpotAmountHtml(amount: string): string {
+  const normalized = amount.replace(/\s+/g, " ").trim();
+  const parsed = normalized.match(/^([0-9][0-9 .]*)\s*([A-Za-z]+)$/u);
+  if (!parsed) {
+    return codeHtml(normalized);
+  }
+  const numericPart = parsed[1]?.trim() ?? normalized;
+  const suffixPart = parsed[2]?.trim() ?? "";
+  return suffixPart.length > 0
+    ? `${codeHtml(numericPart)} ${escapeHtml(suffixPart)}`
+    : codeHtml(numericPart);
+}
+
 export function registerTelegramHandlers(bot: Bot, deps: TelegramBotDeps): void {
-  const { users, lines, draws, gameId, locale } = deps;
+  const { users, lines, draws, fetcher, gameId, locale } = deps;
 
   bot.use(async (ctx, next) => {
     await tgTracer.startActiveSpan("telegram.update", async (span) => {
@@ -96,6 +115,8 @@ export function registerTelegramHandlers(bot: Bot, deps: TelegramBotDeps): void 
       latest.drawKey,
       latest.winningNumbers,
       playedLines,
+      latest.prizeAmountsByHits,
+      latest.lastMaxWinPrize,
     );
     const text = [
       body,
@@ -103,6 +124,37 @@ export function registerTelegramHandlers(bot: Bot, deps: TelegramBotDeps): void 
       t(locale, "telegram.last_draw_source", { source: escapeHtml(latest.resultSource) }),
     ].join("\n");
     await replyHtml(ctx, text);
+  });
+
+  bot.command("jackpot", async (ctx) => {
+    const u = await ensureUser(ctx);
+    if (!u) return;
+
+    const latest = await fetcher.fetchLatestOtoslottoDraw();
+    if (!latest) {
+      await replyHtml(ctx, t(locale, "telegram.jackpot_unavailable"));
+      return;
+    }
+
+    const lastMaxWinPrize = latest.lastMaxWinPrize;
+    const nextPossibleMaxWinPrize = latest.nextPossibleMaxWinPrize;
+    if (!lastMaxWinPrize && !nextPossibleMaxWinPrize) {
+      await replyHtml(ctx, t(locale, "telegram.jackpot_unavailable"));
+      return;
+    }
+    const rows: string[] = [
+      t(locale, "telegram.jackpot_title"),
+      "",
+      t(locale, "telegram.jackpot_last", {
+        amount: lastMaxWinPrize ? formatJackpotAmountHtml(lastMaxWinPrize) : "—",
+      }),
+      t(locale, "telegram.jackpot_next", {
+        amount: nextPossibleMaxWinPrize ? formatJackpotAmountHtml(nextPossibleMaxWinPrize) : "—",
+      }),
+      "",
+      t(locale, "telegram.jackpot_source", { source: escapeHtml(latest.resultSource) }),
+    ];
+    await replyHtml(ctx, rows.join("\n"));
   });
 
   bot.command("add", async (ctx) => {

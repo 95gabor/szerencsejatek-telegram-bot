@@ -8,8 +8,9 @@ as code. Use **FR-** / **NFR-** IDs in commits and reviews where helpful.
 
 A **Telegram bot** that lets users **record which lottery numbers they played** for Szerencsejáték
 Zrt. games. When **new official results** are available, the bot **sends a message** with the
-**winning numbers** and a **per-user summary** of whether their registered lines matched (e.g.
-number of hits, optional prize tier in later phases).
+**winning numbers**, the **weekly prize amounts** for the draw week when available, and a **per-user
+summary** of whether their registered lines matched (e.g. number of hits, optional prize tier in
+later phases).
 
 ## 2. Stakeholders
 
@@ -37,14 +38,15 @@ number of hits, optional prize tier in later phases).
 
 **v1 (Ötöslottó) — implemented commands** (Hungarian copy; see §10):
 
-| Command   | Purpose                                                                        |
-| --------- | ------------------------------------------------------------------------------ |
-| `/start`  | Welcome; registers/updates user.                                               |
-| `/help`   | Game rules and command summary.                                                |
-| `/add`    | Add a line: five distinct integers in [1, 90].                                 |
-| `/lines`  | List stored lines (numbered for `/remove`).                                    |
-| `/remove` | Remove line by index from `/lines`.                                            |
-| `/result` | Show **last persisted** draw result for this bot (from DB), not a live scrape. |
+| Command    | Purpose                                                                        |
+| ---------- | ------------------------------------------------------------------------------ |
+| `/start`   | Welcome; registers/updates user.                                               |
+| `/help`    | Game rules and command summary.                                                |
+| `/add`     | Add a line: five distinct integers in [1, 90].                                 |
+| `/lines`   | List stored lines (numbered for `/remove`).                                    |
+| `/remove`  | Remove line by index from `/lines`.                                            |
+| `/result`  | Show **last persisted** draw result for this bot (from DB), not a live scrape. |
+| `/jackpot` | Fetch and show latest + next possible max win prizes.                          |
 
 For non-command free text messages, the bot replies with the same help content as `/help`.
 
@@ -75,15 +77,19 @@ Telegram `parse_mode`).
 - After new results are processed, send users a message containing:
   - Game name and draw identifier (date / draw number).
   - Winning numbers (and supplementary numbers if applicable).
+  - Last known **max win** prize amount for the draw week (if available).
+  - Weekly prize amounts for prize-relevant hit counts when source data includes them.
   - For each stored line (or an aggregate): hits and/or tier; **MVP** also lists **matched main
     numbers sorted ascending** next to the hit count.
 
 **Implementation:** `OutboundNotifier`; Telegram adapter uses **HTML** parse mode; messages built
 via `src/i18n/` (`t()`, locale files) and `format_otoslotto_user_message.ts`. **Formatting:** use
-`<code>` for **numeric** values; show **találat** count plus **egyező (növ.)** as spaced `<code>`
-blocks; full szelvény row still highlights matches with `<b>...</b>` around `<code>`; do **not**
-wrap **slash-commands** in `<code>` (product rule). **`/result`** uses the same formatter as
-post-draw notifications (plus source line).
+`<code>` for **numeric** values; show **max nyeremény** + **heti nyeremények** (if available) and
+**találat** count plus **egyező (növ.)** as spaced `<code>` blocks; full szelvény row still
+highlights matches with `<b>...</b>` around `<code>`; do **not** wrap **slash-commands** in `<code>`
+(product rule). **`/result`** uses the same formatter as post-draw notifications (plus source line).
+**`/jackpot`** fetches the latest source and returns both **utolsó max nyeremény** and **következő
+várható max nyeremény**.
 
 ### FR-6 — Opt out
 
@@ -145,17 +151,17 @@ The pipeline supports **manual** or **fetcher-driven** paths into `draw.result.p
 
 ## 9. Traceability (requirements → code)
 
-| ID    | Primary locations                                                                                                                                                                                      |
-| ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| FR-1  | `src/adapters/persistence/drizzle/user_repository.ts`, `register_handlers` → `upsertUser`                                                                                                              |
-| FR-2  | `src/telegram/register_handlers.ts`, `src/domain/otoslotto/line.ts`, `played_line_repository`                                                                                                          |
-| FR-3  | `BetHuOtoslottoFetcher`, `handle_draw_update_requested`, `handle_draw_result_persist`, `DrizzleDrawRecordRepository`, `src/server.ts`; `/result` → `formatOtoslottoUserMessage` in `register_handlers` |
-| FR-4  | `src/domain/otoslotto/match.ts`, `format_otoslotto_user_message.ts`                                                                                                                                    |
-| FR-5  | `handle_draw_result_stored`, `handle_user_notification_requested`, `TelegramOutboundNotifier`                                                                                                          |
-| FR-6  | _Not implemented_                                                                                                                                                                                      |
-| NFR-3 | `src/observability/`, `src/logging/`, `src/server.ts`, `src/application/dispatch.ts`, `register_handlers` — [ADR 0007](adr/0007-opentelemetry-metrics-tracing.md)                                      |
-| NFR-4 | `src/i18n/`, `src/telegram/translate_line_error.ts`                                                                                                                                                    |
-| NFR-5 | `src/config/env.ts`, [ADR 0006](adr/0006-zod-config-and-i18n.md)                                                                                                                                       |
+| ID    | Primary locations                                                                                                                                                                                                                                            |
+| ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| FR-1  | `src/adapters/persistence/drizzle/user_repository.ts`, `register_handlers` → `upsertUser`                                                                                                                                                                    |
+| FR-2  | `src/telegram/register_handlers.ts`, `src/domain/otoslotto/line.ts`, `played_line_repository`                                                                                                                                                                |
+| FR-3  | `BetHuOtoslottoFetcher` (winning numbers + weekly prize amounts + max win amounts when available), `handle_draw_update_requested`, `handle_draw_result_persist`, `DrizzleDrawRecordRepository`, `src/server.ts`; `/result`/`/jackpot` in `register_handlers` |
+| FR-4  | `src/domain/otoslotto/match.ts`, `format_otoslotto_user_message.ts`                                                                                                                                                                                          |
+| FR-5  | `handle_draw_result_stored`, `handle_user_notification_requested`, `TelegramOutboundNotifier`                                                                                                                                                                |
+| FR-6  | _Not implemented_                                                                                                                                                                                                                                            |
+| NFR-3 | `src/observability/`, `src/logging/`, `src/server.ts`, `src/application/dispatch.ts`, `register_handlers` — [ADR 0007](adr/0007-opentelemetry-metrics-tracing.md)                                                                                            |
+| NFR-4 | `src/i18n/`, `src/telegram/translate_line_error.ts`                                                                                                                                                                                                          |
+| NFR-5 | `src/config/env.ts`, [ADR 0006](adr/0006-zod-config-and-i18n.md)                                                                                                                                                                                             |
 
 ## 10. Telegram UX (v1)
 
@@ -164,8 +170,10 @@ The pipeline supports **manual** or **fetcher-driven** paths into `draw.result.p
   `deploy/helm/szerencsejatek-telegram-bot/README.md`.
 - **Replies:** HTML (`parse_mode: "HTML"`); lists and bold for structure; **numbers** in `<code>`,
   **not** slash-commands (see FR-5).
-- **`/result`:** latest stored draw for `GAME_ID`; same per-line találat + egyező (növ.) + szelvény
-  formatting as draw notifications, plus **forrás** line (§7).
+- **`/result`:** latest stored draw for `GAME_ID`; same max nyeremény + heti nyeremény + per-line
+  találat + egyező (növ.) + szelvény formatting as draw notifications, plus **forrás** line (§7).
+- **`/jackpot`:** latest fetched **utolsó max nyeremény** and **következő várható max nyeremény**
+  with source line.
 - **Non-command text:** replies with the `/help` content so users quickly recover to supported
   command flows.
 
@@ -182,4 +190,5 @@ The pipeline supports **manual** or **fetcher-driven** paths into `draw.result.p
 
 _Last updated: hosting / transport aligned with Helm defaults (long polling, CronJob, ClusterIP) and
 optional Deno Cron (HTTP CloudEvent to `WEBHOOK_URL/`); requirements traceability,
-Telegram/HTML/i18n, NFR-5; align with pipeline and `docs/adr/`._
+Telegram/HTML/i18n, weekly + max win prizes in notifications and `/result`, plus `/jackpot`, NFR-5;
+align with pipeline and `docs/adr/`._

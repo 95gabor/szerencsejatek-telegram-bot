@@ -1,8 +1,18 @@
 import { desc, eq } from "npm:drizzle-orm@0.45.1";
-import { type OtoslottoLine, parseOtoslottoLine } from "../../../domain/otoslotto/mod.ts";
+import {
+  type OtoslottoLine,
+  type OtoslottoPrizeAmountsByHits,
+  parseOtoslottoLine,
+  parseOtoslottoMaxWinPrizes,
+  parseOtoslottoPrizeAmountsByHits,
+} from "../../../domain/otoslotto/mod.ts";
 import type { DrawRecordRepository, StoredDrawRecord } from "../../../ports/mod.ts";
 import type { AppDatabase } from "./client.ts";
 import { draws } from "./schema.ts";
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === "object" && !Array.isArray(value);
+}
 
 export class DrizzleDrawRecordRepository implements DrawRecordRepository {
   constructor(private readonly db: AppDatabase) {}
@@ -22,15 +32,34 @@ export class DrizzleDrawRecordRepository implements DrawRecordRepository {
     const r = rows[0];
     if (!r) return null;
 
-    const raw: unknown = JSON.parse(r.numbersJson);
-    if (!Array.isArray(raw) || raw.some((n) => typeof n !== "number")) {
+    const rawPayload: unknown = JSON.parse(r.numbersJson);
+    const winningNumbersPayload = Array.isArray(rawPayload)
+      ? rawPayload
+      : isRecord(rawPayload)
+      ? rawPayload.winningNumbers
+      : null;
+    if (
+      !Array.isArray(winningNumbersPayload) ||
+      winningNumbersPayload.some((n) => typeof n !== "number")
+    ) {
       throw new Error(`Invalid numbers_json for draw ${r.drawKey}`);
     }
-    const winningNumbers = parseOtoslottoLine(raw);
+    const winningNumbers = parseOtoslottoLine(winningNumbersPayload);
+    const prizeAmountsByHits = isRecord(rawPayload)
+      ? parseOtoslottoPrizeAmountsByHits(rawPayload.prizeAmountsByHits)
+      : undefined;
+    const maxWinPrizes = isRecord(rawPayload)
+      ? parseOtoslottoMaxWinPrizes({
+        lastMaxWinPrize: rawPayload.lastMaxWinPrize,
+        nextPossibleMaxWinPrize: rawPayload.nextPossibleMaxWinPrize,
+      })
+      : undefined;
     return {
       drawKey: r.drawKey,
       winningNumbers,
       resultSource: r.resultSource,
+      prizeAmountsByHits,
+      ...maxWinPrizes,
     };
   }
 
@@ -39,15 +68,28 @@ export class DrizzleDrawRecordRepository implements DrawRecordRepository {
     drawKey: string;
     winningNumbers: OtoslottoLine;
     resultSource: string;
+    prizeAmountsByHits?: OtoslottoPrizeAmountsByHits;
+    lastMaxWinPrize?: string;
+    nextPossibleMaxWinPrize?: string;
   }): Promise<boolean> {
     const id = crypto.randomUUID();
+    const prizeAmountsByHits = parseOtoslottoPrizeAmountsByHits(input.prizeAmountsByHits);
+    const maxWinPrizes = parseOtoslottoMaxWinPrizes({
+      lastMaxWinPrize: input.lastMaxWinPrize,
+      nextPossibleMaxWinPrize: input.nextPossibleMaxWinPrize,
+    });
+    const numbersPayload = {
+      winningNumbers: [...input.winningNumbers],
+      ...(prizeAmountsByHits ? { prizeAmountsByHits } : {}),
+      ...(maxWinPrizes ?? {}),
+    };
     const inserted = await this.db
       .insert(draws)
       .values({
         id,
         gameId: input.gameId,
         drawKey: input.drawKey,
-        numbersJson: JSON.stringify([...input.winningNumbers]),
+        numbersJson: JSON.stringify(numbersPayload),
         resultSource: input.resultSource,
         createdAt: new Date(),
       })

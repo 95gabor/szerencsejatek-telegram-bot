@@ -42,6 +42,8 @@ export async function handleDrawResultStored(
       storedPayload.drawKey,
       winningNumbers,
       subscriber.lines,
+      storedPayload.prizeAmountsByHits,
+      storedPayload.lastMaxWinPrize,
     );
 
     const notificationData: UserNotificationRequestedData = {

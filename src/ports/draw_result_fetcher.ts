@@ -1,4 +1,4 @@
-import type { OtoslottoLine } from "../domain/otoslotto/mod.ts";
+import type { OtoslottoLine, OtoslottoPrizeAmountsByHits } from "../domain/otoslotto/mod.ts";
 
 /** Fetches latest official Ötöslottó numbers from the configured source (HTTP, CSV, stub, …). */
 export interface DrawResultFetcher {
@@ -7,6 +7,9 @@ export interface DrawResultFetcher {
       drawKey: string;
       winningNumbers: OtoslottoLine;
       resultSource: string;
+      prizeAmountsByHits?: OtoslottoPrizeAmountsByHits;
+      lastMaxWinPrize?: string;
+      nextPossibleMaxWinPrize?: string;
     } | null
   >;
 }

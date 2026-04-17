@@ -1,4 +1,4 @@
-import type { OtoslottoLine } from "../domain/otoslotto/mod.ts";
+import type { OtoslottoLine, OtoslottoPrizeAmountsByHits } from "../domain/otoslotto/mod.ts";
 
 export type UserRecord = {
   id: string;
@@ -45,6 +45,9 @@ export type StoredDrawRecord = {
   drawKey: string;
   winningNumbers: OtoslottoLine;
   resultSource: string;
+  prizeAmountsByHits?: OtoslottoPrizeAmountsByHits;
+  lastMaxWinPrize?: string;
+  nextPossibleMaxWinPrize?: string;
 };
 
 /** Ensures a draw is processed once and stores official numbers. */
@@ -55,6 +58,9 @@ export interface DrawRecordRepository {
     drawKey: string;
     winningNumbers: OtoslottoLine;
     resultSource: string;
+    prizeAmountsByHits?: OtoslottoPrizeAmountsByHits;
+    lastMaxWinPrize?: string;
+    nextPossibleMaxWinPrize?: string;
   }): Promise<boolean>;
 
   /** Most recently stored draw for this game (`created_at` desc), or `null` if none. */

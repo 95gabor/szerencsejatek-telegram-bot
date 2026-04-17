@@ -6,6 +6,10 @@
  * Requires BOT_TOKEN and DATABASE_URL (default file:./data/app.db).
  */
 import { Bot } from "grammy";
+import {
+  BetHuOtoslottoFetcher,
+  DEFAULT_OTOSLOTTO_RESULT_JSON_URL,
+} from "./adapters/ingestion/bet_hu_otoslotto_fetcher.ts";
 import { createPersistenceBundle } from "./adapters/persistence/drizzle/persistence_factory.ts";
 import { loadConfig } from "./config/env.ts";
 import { configureLogger, getLogger } from "./logging/mod.ts";
@@ -31,10 +35,14 @@ await Deno.mkdir("data", { recursive: true });
 const { users, lines, draws } = await createPersistenceBundle(config.DATABASE_URL);
 
 const bot = new Bot(token);
+const fetcher = new BetHuOtoslottoFetcher({
+  url: config.OTOSLOTTO_RESULT_JSON_URL ?? DEFAULT_OTOSLOTTO_RESULT_JSON_URL,
+});
 registerTelegramHandlers(bot, {
   users,
   lines,
   draws,
+  fetcher,
   gameId: config.GAME_ID,
   locale: config.DEFAULT_LOCALE,
 });
