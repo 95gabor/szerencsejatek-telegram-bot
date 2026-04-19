@@ -2,12 +2,12 @@ import {
   InvalidOtoslottoLineError,
   OTOSLOTTO_PRIZE_HIT_COUNTS,
   type OtoslottoLine,
-  type OtoslottoPrizeAmountsByHits,
   parseOtoslottoLine,
   parseOtoslottoMaxWinPrizes,
 } from "../../domain/otoslotto/mod.ts";
+import type { PrizeAmountsByHits } from "../../domain/mod.ts";
 import { getLogger } from "../../logging/mod.ts";
-import type { DrawResultFetcher } from "../../ports/draw_result_fetcher.ts";
+import type { DrawResultFetcher, FetchedDrawResult } from "../../ports/draw_result_fetcher.ts";
 
 /** Third-party fallback feed used as default source while operator endpoints are geo/IP-restricted. */
 export const DEFAULT_OTOSLOTTO_RESULT_JSON_URL =
@@ -56,9 +56,9 @@ function tryReadHitCount(value: unknown): 2 | 3 | 4 | 5 | null {
   return parsed === 2 || parsed === 3 || parsed === 4 || parsed === 5 ? parsed : null;
 }
 
-function parseBetHuLottery5PrizeAmounts(entry: Record<string, unknown>):
-  | OtoslottoPrizeAmountsByHits
-  | undefined {
+function parseBetHuLottery5PrizeAmounts(
+  entry: Record<string, unknown>,
+): PrizeAmountsByHits | undefined {
   const draw = entry.draw;
   if (!isRecord(draw)) {
     return undefined;
@@ -71,7 +71,7 @@ function parseBetHuLottery5PrizeAmounts(entry: Record<string, unknown>):
   if (!Array.isArray(ranges)) {
     return undefined;
   }
-  const parsed: OtoslottoPrizeAmountsByHits = {};
+  const parsed: PrizeAmountsByHits = {};
   for (const range of ranges) {
     if (!isRecord(range)) {
       continue;
@@ -92,7 +92,7 @@ function parseBetHuLottery5PrizeAmounts(entry: Record<string, unknown>):
     if (!amount) {
       continue;
     }
-    parsed[hitCount] = amount;
+    parsed[String(hitCount) as `${number}`] = amount;
   }
   return Object.keys(parsed).length > 0 ? parsed : undefined;
 }
@@ -135,7 +135,7 @@ export function parseBetHuLottery5LastDraw(
   | {
     drawKey: string;
     winningNumbers: number[];
-    prizeAmountsByHits?: OtoslottoPrizeAmountsByHits;
+    prizeAmountsByHits?: PrizeAmountsByHits;
     lastMaxWinPrize?: string;
     nextPossibleMaxWinPrize?: string;
   }
@@ -173,7 +173,7 @@ export function parseBetHuLottery5LastDraw(
   const prizeAmountsByHits = parseBetHuLottery5PrizeAmounts(entry);
   const maxWinPrizes = parseBetHuLottery5MaxWinPrizes(entry) ??
     parseOtoslottoMaxWinPrizes({
-      lastMaxWinPrize: prizeAmountsByHits?.[5],
+      lastMaxWinPrize: prizeAmountsByHits?.["5"],
     });
   return {
     drawKey,
@@ -209,7 +209,7 @@ export function parseBetHuOtoslottoLatestFromHtml(
   | {
     drawKey: string;
     winningNumbers: number[];
-    prizeAmountsByHits?: OtoslottoPrizeAmountsByHits;
+    prizeAmountsByHits?: PrizeAmountsByHits;
     lastMaxWinPrize?: string;
     nextPossibleMaxWinPrize?: string;
   }
@@ -231,7 +231,7 @@ export function parseBetHuOtoslottoLatestFromHtml(
     if (winningNumbers.length !== 5 || winningNumbers.some((n) => !Number.isInteger(n))) {
       continue;
     }
-    const prizeAmountsByHits: OtoslottoPrizeAmountsByHits = {};
+    const prizeAmountsByHits: PrizeAmountsByHits = {};
     const winningNumbersStartIdx = cells.length - 5;
     for (let i = 0; i < OTOSLOTTO_PRIZE_HIT_COUNTS.length; i++) {
       const hitCount = OTOSLOTTO_PRIZE_HIT_COUNTS[i]!;
@@ -244,10 +244,10 @@ export function parseBetHuOtoslottoLatestFromHtml(
       if (!amount) {
         continue;
       }
-      prizeAmountsByHits[hitCount] = amount;
+      prizeAmountsByHits[String(hitCount) as `${number}`] = amount;
     }
     const maxWinPrizes = parseOtoslottoMaxWinPrizes({
-      lastMaxWinPrize: prizeAmountsByHits[5],
+      lastMaxWinPrize: prizeAmountsByHits["5"],
       nextPossibleMaxWinPrize: parseNextPossibleMaxWinPrizeFromHtml(html),
     });
     return {
@@ -340,16 +340,7 @@ export class BetHuOtoslottoFetcher implements DrawResultFetcher {
     this.fetchImpl = options.fetchImpl ?? globalThis.fetch;
   }
 
-  async fetchLatestOtoslottoDraw(): Promise<
-    {
-      drawKey: string;
-      winningNumbers: OtoslottoLine;
-      resultSource: string;
-      prizeAmountsByHits?: OtoslottoPrizeAmountsByHits;
-      lastMaxWinPrize?: string;
-      nextPossibleMaxWinPrize?: string;
-    } | null
-  > {
+  async fetchLatestDraw(): Promise<FetchedDrawResult | null> {
     const log = getLogger();
     let res: Response;
     try {
@@ -390,7 +381,7 @@ export class BetHuOtoslottoFetcher implements DrawResultFetcher {
       | {
         drawKey: string;
         winningNumbers: number[];
-        prizeAmountsByHits?: OtoslottoPrizeAmountsByHits;
+        prizeAmountsByHits?: PrizeAmountsByHits;
         lastMaxWinPrize?: string;
         nextPossibleMaxWinPrize?: string;
       }
@@ -433,7 +424,7 @@ export class BetHuOtoslottoFetcher implements DrawResultFetcher {
     }
 
     const maxWinPrizes = parseOtoslottoMaxWinPrizes({
-      lastMaxWinPrize: parsed.lastMaxWinPrize ?? parsed.prizeAmountsByHits?.[5],
+      lastMaxWinPrize: parsed.lastMaxWinPrize ?? parsed.prizeAmountsByHits?.["5"],
       nextPossibleMaxWinPrize: parsed.nextPossibleMaxWinPrize,
     });
     return {

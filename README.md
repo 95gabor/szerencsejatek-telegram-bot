@@ -67,8 +67,8 @@ paths.
 deno task check
 ```
 
-This runs unit tests under `src/` and application e2e under `tests/e2e` (Ötöslottó pipeline with a
-temporary SQLite file, e.g. winning numbers `1,2,3,4,5`).
+This runs unit tests under `src/` and application e2e under `tests/e2e` (currently Ötöslottó
+pipeline with a temporary SQLite file, e.g. winning numbers `1,2,3,4,5`).
 
 ### Optional: kind + Helm smoke
 

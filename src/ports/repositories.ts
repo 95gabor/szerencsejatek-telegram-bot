@@ -1,4 +1,9 @@
-import type { OtoslottoLine, OtoslottoPrizeAmountsByHits } from "../domain/otoslotto/mod.ts";
+import type {
+  DrawPayload,
+  DrawWinningNumbers,
+  PlayedLine,
+  SupportedGameId,
+} from "../domain/mod.ts";
 
 export type UserRecord = {
   id: string;
@@ -9,8 +14,8 @@ export type UserRecord = {
 export type PlayedLineRecord = {
   id: string;
   userId: string;
-  /** Sorted five numbers for Ötöslottó. */
-  numbers: OtoslottoLine;
+  /** Validated line for selected game (Ötöslottó or Eurojackpot). */
+  numbers: PlayedLine;
 };
 
 /** Telegram identity → internal user row (chat id updated on each interaction). */
@@ -32,8 +37,8 @@ export interface PlayedLineRepository {
 
   addLine(input: {
     userId: string;
-    gameId: string;
-    numbers: OtoslottoLine;
+    gameId: SupportedGameId;
+    numbers: PlayedLine;
   }): Promise<{ id: string }>;
 
   /** Deletes the line if it belongs to this user. */
@@ -43,9 +48,10 @@ export interface PlayedLineRepository {
 /** Row read back from `draws` (e.g. latest for a game). */
 export type StoredDrawRecord = {
   drawKey: string;
-  winningNumbers: OtoslottoLine;
+  gameId: SupportedGameId;
+  winningNumbers: DrawWinningNumbers;
   resultSource: string;
-  prizeAmountsByHits?: OtoslottoPrizeAmountsByHits;
+  prizeAmountsByHits?: DrawPayload["prizeAmountsByHits"];
   lastMaxWinPrize?: string;
   nextPossibleMaxWinPrize?: string;
 };
@@ -54,15 +60,15 @@ export type StoredDrawRecord = {
 export interface DrawRecordRepository {
   /** @returns `true` if this draw was newly inserted, `false` if it already existed. */
   tryInsertDraw(input: {
-    gameId: string;
+    gameId: SupportedGameId;
     drawKey: string;
-    winningNumbers: OtoslottoLine;
+    winningNumbers: DrawWinningNumbers;
     resultSource: string;
-    prizeAmountsByHits?: OtoslottoPrizeAmountsByHits;
+    prizeAmountsByHits?: DrawPayload["prizeAmountsByHits"];
     lastMaxWinPrize?: string;
     nextPossibleMaxWinPrize?: string;
   }): Promise<boolean>;
 
   /** Most recently stored draw for this game (`created_at` desc), or `null` if none. */
-  getLatestDraw(gameId: string): Promise<StoredDrawRecord | null>;
+  getLatestDraw(gameId: SupportedGameId): Promise<StoredDrawRecord | null>;
 }

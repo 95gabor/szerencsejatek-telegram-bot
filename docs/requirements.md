@@ -116,8 +116,8 @@ várható max nyeremény**.
 
 ## 6. Supported games
 
-**v1 (current implementation focus):** **Ötöslottó** — domain and pipeline types live under
-`src/domain/otoslotto/` and `src/events/otoslotto_pipeline.ts`.
+**Supported today:** **Ötöslottó** and **Eurojackpot** (selected by `GAME_ID`) — domain and shared
+pipeline types live under `src/domain/` and `src/events/pipeline.ts`.
 
 **Later:** Additional games (Hatoslottó, Skandináv, Keno, Joker, …) require separate rule modules
 and requirements updates per game.
@@ -127,6 +127,10 @@ and requirements updates per game.
 **Implemented (Ötöslottó):** **`BetHuOtoslottoFetcher`** currently defaults to a third-party results
 page (`magayo.com` Hungary Otoslotto) because operator endpoints are geo/IP-restricted from some
 runtime environments. Override with **`OTOSLOTTO_RESULT_JSON_URL`** to switch source.
+
+**Implemented (Eurojackpot):** **`EurojackpotFetcher`** uses a dedicated Eurojackpot results page
+parser (`euro-jackpot.net` fallback). Override with **`EUROJACKPOT_RESULT_JSON_URL`** to switch
+source.
 
 - Official source URLs (kept in code/docs for fallback when reachable):
   - `https://bet.szerencsejatek.hu/cmsfiles/otos.html`
@@ -142,26 +146,26 @@ The pipeline supports **manual** or **fetcher-driven** paths into `draw.result.p
 
 | Topic                 | Decision                                                                                                                                                                      |
 | --------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| First game            | **Ötöslottó**                                                                                                                                                                 |
+| First game            | **Ötöslottó** (plus Eurojackpot implemented behind `GAME_ID`)                                                                                                                 |
 | Notifications         | **One message per draw per user** (one `user.notification.requested` per subscriber).                                                                                         |
 | Storage               | **Drizzle** persistence with backend selected by `DATABASE_URL`: **SQLite/libSQL** (`file:`, `libsql:`, `https:`, `wss:`) or **PostgreSQL** (`postgres://`, `postgresql://`). |
 | User-facing language  | **Hungarian** for v1 (`NFR-4`).                                                                                                                                               |
-| Results source (prod) | **Ötöslottó:** `BetHuOtoslottoFetcher` + `OTOSLOTTO_RESULT_JSON_URL` (default: magayo third-party fallback; override to official endpoint when reachable).                    |
+| Results source (prod) | **Ötöslottó:** `BetHuOtoslottoFetcher` + `OTOSLOTTO_RESULT_JSON_URL`; **Eurojackpot:** `EurojackpotFetcher` + `EUROJACKPOT_RESULT_JSON_URL`.                                  |
 | Hosting (prod)        | **Open** — VPS, Deno Deploy, or **Kubernetes** (Helm default: long polling + internal HTTP + CronJob; optional webhook / Knative; optional Deno Cron POST to `WEBHOOK_URL/`). |
 
 ## 9. Traceability (requirements → code)
 
-| ID    | Primary locations                                                                                                                                                                                                                                            |
-| ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| FR-1  | `src/adapters/persistence/drizzle/user_repository.ts`, `register_handlers` → `upsertUser`                                                                                                                                                                    |
-| FR-2  | `src/telegram/register_handlers.ts`, `src/domain/otoslotto/line.ts`, `played_line_repository`                                                                                                                                                                |
-| FR-3  | `BetHuOtoslottoFetcher` (winning numbers + weekly prize amounts + max win amounts when available), `handle_draw_update_requested`, `handle_draw_result_persist`, `DrizzleDrawRecordRepository`, `src/server.ts`; `/result`/`/jackpot` in `register_handlers` |
-| FR-4  | `src/domain/otoslotto/match.ts`, `format_otoslotto_user_message.ts`                                                                                                                                                                                          |
-| FR-5  | `handle_draw_result_stored`, `handle_user_notification_requested`, `TelegramOutboundNotifier`                                                                                                                                                                |
-| FR-6  | _Not implemented_                                                                                                                                                                                                                                            |
-| NFR-3 | `src/observability/`, `src/logging/`, `src/server.ts`, `src/application/dispatch.ts`, `register_handlers` — [ADR 0007](adr/0007-opentelemetry-metrics-tracing.md)                                                                                            |
-| NFR-4 | `src/i18n/`, `src/telegram/translate_line_error.ts`                                                                                                                                                                                                          |
-| NFR-5 | `src/config/env.ts`, [ADR 0006](adr/0006-zod-config-and-i18n.md)                                                                                                                                                                                             |
+| ID    | Primary locations                                                                                                                                                                                         |
+| ----- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| FR-1  | `src/adapters/persistence/drizzle/user_repository.ts`, `register_handlers` → `upsertUser`                                                                                                                 |
+| FR-2  | `src/telegram/register_handlers.ts`, `src/domain/otoslotto/line.ts`, `src/domain/eurojackpot/line.ts`, `played_line_repository`                                                                           |
+| FR-3  | `BetHuOtoslottoFetcher` / `EurojackpotFetcher`, `handle_draw_update_requested`, `handle_draw_result_persist`, `DrizzleDrawRecordRepository`, `src/server.ts`; `/result`/`/jackpot` in `register_handlers` |
+| FR-4  | `src/domain/otoslotto/match.ts`, `src/domain/eurojackpot/match.ts`, `format_otoslotto_user_message.ts`, `format_eurojackpot_user_message.ts`                                                              |
+| FR-5  | `handle_draw_result_stored`, `handle_user_notification_requested`, `TelegramOutboundNotifier`                                                                                                             |
+| FR-6  | _Not implemented_                                                                                                                                                                                         |
+| NFR-3 | `src/observability/`, `src/logging/`, `src/server.ts`, `src/application/dispatch.ts`, `register_handlers` — [ADR 0007](adr/0007-opentelemetry-metrics-tracing.md)                                         |
+| NFR-4 | `src/i18n/`, `src/telegram/translate_line_error.ts`                                                                                                                                                       |
+| NFR-5 | `src/config/env.ts`, [ADR 0006](adr/0006-zod-config-and-i18n.md)                                                                                                                                          |
 
 ## 10. Telegram UX (v1)
 

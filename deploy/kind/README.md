@@ -176,7 +176,7 @@ curl -sv -X POST "${URL}" \
     "specversion":"1.0",
     "id":"manual-1",
     "source":"https://example.com/manual",
-    "type":"dev.szerencsejatek.telegram.otoslotto.draw.update.requested.v1",
+    "type":"dev.szerencsejatek.telegram.draw.update.requested.v1",
     "datacontenttype":"application/json",
     "data":{"gameId":"otoslotto"}
   }'
@@ -189,8 +189,9 @@ draw, it is persisted and subscribers notified (same as production).
 
 - **Outbound messaging** uses `NoopOutboundNotifier` in `src/server.ts` until you wire Telegram (or
   another `OutboundNotifier`).
-- **Draw ingestion** uses **`BetHuOtoslottoFetcher`** (operator public JSON — see
-  `OTOSLOTTO_RESULT_JSON_URL`).
+- **Draw ingestion** is selected by `GAME_ID`:
+  - `otoslotto` → `BetHuOtoslottoFetcher` (`OTOSLOTTO_RESULT_JSON_URL`)
+  - `eurojackpot` → `EurojackpotFetcher` (`EUROJACKPOT_RESULT_JSON_URL`)
 - **Persistence** uses SQLite at `DATABASE_URL` (default `file:/data/app.db` in the manifest with an
   `emptyDir` volume).
 - For **TLS** and **custom domains**, follow

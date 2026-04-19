@@ -132,7 +132,7 @@ Deno.test("BetHuOtoslottoFetcher uses fetchImpl and returns validated tuple", as
         }),
       ),
   });
-  const r = await fetcher.fetchLatestOtoslottoDraw();
+  const r = await fetcher.fetchLatestDraw();
   assertEquals(r?.drawKey, "36126");
   assertEquals(r?.winningNumbers, [7, 18, 22, 52, 89]);
   assertEquals(typeof r?.resultSource, "string");
@@ -157,7 +157,7 @@ Deno.test("BetHuOtoslottoFetcher falls back to html parser", async () => {
         }),
       ),
   });
-  const r = await fetcher.fetchLatestOtoslottoDraw();
+  const r = await fetcher.fetchLatestDraw();
   assertEquals(r?.drawKey, "2026-14");
   assertEquals(r?.winningNumbers, [36, 45, 50, 67, 77]);
   assertEquals(typeof r?.resultSource, "string");
@@ -182,7 +182,7 @@ Deno.test("BetHuOtoslottoFetcher parses magayo html source", async () => {
         }),
       ),
   });
-  const r = await fetcher.fetchLatestOtoslottoDraw();
+  const r = await fetcher.fetchLatestDraw();
   assertEquals(r?.drawKey, "2026-04-04");
   assertEquals(r?.winningNumbers, [36, 45, 50, 67, 77]);
   assertEquals(typeof r?.resultSource, "string");

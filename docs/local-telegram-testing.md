@@ -15,7 +15,8 @@ replace manual checks of commands and persistence.
    ```
 
    Other variables are optional for this flow; defaults are fine (`DATABASE_URL=file:./data/app.db`,
-   `GAME_ID=otoslotto`, `DEFAULT_LOCALE=hu`).
+   `GAME_ID=otoslotto`, `DEFAULT_LOCALE=hu`). Set `GAME_ID=eurojackpot` to run the Eurojackpot
+   command/result flow instead of Ötöslottó.
 
 On startup, `loadConfig()` loads `./.env` into the process environment (via `@std/dotenv`); values
 already set in the shell take precedence.

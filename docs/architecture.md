@@ -9,9 +9,10 @@ decomposition, pipeline, technology, deployment variants, and layout. **Product 
 ### 1.1 System context
 
 Players use **Telegram** to register lines and read results. The bot compares stored lines to
-**published** draw results from a configurable source (today: **Ötöslottó** JSON feed). Outbound
-messages go back through the **Telegram Bot API**. Draw processing is driven by **CloudEvents** over
-HTTP (`POST /`) inside the app; schedulers or operators emit **`draw.update.requested`**.
+**published** draw results from a configurable source (today: **Ötöslottó** and **Eurojackpot**
+feeds selected by `GAME_ID`). Outbound messages go back through the **Telegram Bot API**. Draw
+processing is driven by **CloudEvents** over HTTP (`POST /`) inside the app; schedulers or operators
+emit **`draw.update.requested`**.
 
 ```mermaid
 flowchart LR
@@ -102,7 +103,7 @@ flowchart TB
   end
   subgraph outside [Outside cluster]
     TAPI[Telegram Bot API]
-    FEED[Ötöslottó JSON URL]
+    FEED[Ötöslottó or Eurojackpot feed URL]
   end
   TEL <-->|long poll + commands| TAPI
   SRV --> FEED
@@ -129,12 +130,12 @@ See [ADR 0001](adr/0001-cloud-events-pipeline.md) and
 | **Notifier**  | Load subscribers with lines for that draw window; build messages; send via Bot API.                                           |
 | **Storage**   | Users, games, lines, processed draws (for idempotency).                                                                       |
 
-## 2.1 Ötöslottó pipeline (CNCF CloudEvents — DX over micro-optimisation)
+## 2.1 Draw pipeline (CNCF CloudEvents — DX over micro-optimisation)
 
 Steps are **small handlers** connected by **CloudEvents v1.0**-shaped messages
-(`src/events/otoslotto_pipeline.ts`). The router is `dispatchPipelineEvent`
-(`src/application/dispatch.ts`); `createPipelineEmitter` wires recursive dispatch so each stage can
-`emit` the next event.
+(`src/events/pipeline.ts`, re-exported from `src/events/otoslotto_pipeline.ts` for compatibility).
+The router is `dispatchPipelineEvent` (`src/application/dispatch.ts`); `createPipelineEmitter` wires
+recursive dispatch so each stage can `emit` the next event.
 
 ```mermaid
 flowchart LR
@@ -251,7 +252,7 @@ src/
   main.ts                    # exports composition root helpers
   application/               # pipeline handlers + dispatch + message formatting
   domain/                    # game rules, matching (pure)
-  events/                    # CloudEvents types + Ötöslottó pipeline constants
+  events/                    # CloudEvents types + pipeline constants
   ports/                     # interfaces (repositories, notifier, fetcher, emit)
   adapters/
     http/                    # CloudEvents request parsing
@@ -270,8 +271,8 @@ deploy/
 
 ## 8. Risks and mitigations
 
-| Risk                    | Mitigation                                                                                                                                                                         |
-| ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Operator feed changes   | **`OTOSLOTTO_RESULT_JSON_URL`** override (current default: third-party `magayo` fallback; official bet.hu URLs kept for rollback); parse errors logged; pipeline skips on failure. |
-| Rule complexity (tiers) | Ship **hit counts** first; add tier tables per game in domain layer.                                                                                                               |
-| Duplicate notifications | Persist processed `(game, draw)` and notification ledger.                                                                                                                          |
+| Risk                    | Mitigation                                                                                                                     |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| Operator feed changes   | **`OTOSLOTTO_RESULT_JSON_URL`** / **`EUROJACKPOT_RESULT_JSON_URL`** overrides; parse errors logged; pipeline skips on failure. |
+| Rule complexity (tiers) | Ship **hit counts** first; add tier tables per game in domain layer.                                                           |
+| Duplicate notifications | Persist processed `(game, draw)` and notification ledger.                                                                      |

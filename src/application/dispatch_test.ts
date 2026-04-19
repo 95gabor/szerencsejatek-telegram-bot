@@ -6,8 +6,9 @@ import {
   EVENT_TYPE_DRAW_RESULT_STORED,
   EVENT_TYPE_DRAW_UPDATE_REQUESTED,
   EVENT_TYPE_USER_NOTIFICATION_REQUESTED,
-} from "../events/otoslotto_pipeline.ts";
+} from "../events/pipeline.ts";
 import { GAME_ID_OTOSLOTTO } from "../domain/otoslotto/mod.ts";
+import type { FetchedDrawResult } from "../ports/draw_result_fetcher.ts";
 import type { DrawResultFetcher } from "../ports/draw_result_fetcher.ts";
 import type { DrawRecordRepository, PlayedLineRepository } from "../ports/repositories.ts";
 import type { EmitCloudEvent } from "../ports/event_emitter.ts";
@@ -21,7 +22,7 @@ Deno.test("pipeline: update → persist → stored → notification", async () =
   const sentMessages: Array<{ chatId: bigint; text: string }> = [];
 
   const fetcher: DrawResultFetcher = {
-    fetchLatestOtoslottoDraw() {
+    fetchLatestDraw(): Promise<FetchedDrawResult | null> {
       return Promise.resolve({
         drawKey: "2026-W12",
         winningNumbers: [7, 18, 22, 52, 89],
@@ -42,7 +43,7 @@ Deno.test("pipeline: update → persist → stored → notification", async () =
     tryInsertDraw() {
       return Promise.resolve(true);
     },
-    getLatestDraw() {
+    getLatestDraw(_gameId) {
       return Promise.reject(new Error("not used in pipeline test"));
     },
   };
@@ -133,7 +134,7 @@ Deno.test("dispatch ignores unknown event types (no port calls)", async () => {
   const noopEmit: EmitCloudEvent = async () => {};
 
   const fetcher: DrawResultFetcher = {
-    fetchLatestOtoslottoDraw() {
+    fetchLatestDraw() {
       return Promise.reject(new Error("fetcher must not run"));
     },
   };
@@ -152,7 +153,7 @@ Deno.test("dispatch ignores unknown event types (no port calls)", async () => {
       tryInsertDraw() {
         return Promise.reject(new Error("draws must not run"));
       },
-      getLatestDraw() {
+      getLatestDraw(_gameId) {
         return Promise.reject(new Error("draws must not run"));
       },
     },

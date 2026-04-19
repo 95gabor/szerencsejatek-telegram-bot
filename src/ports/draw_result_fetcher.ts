@@ -1,15 +1,15 @@
-import type { OtoslottoLine, OtoslottoPrizeAmountsByHits } from "../domain/otoslotto/mod.ts";
+import type { DrawWinningNumbers, PrizeAmountsByHits } from "../domain/game.ts";
 
-/** Fetches latest official Ötöslottó numbers from the configured source (HTTP, CSV, stub, …). */
+export type FetchedDrawResult = {
+  drawKey: string;
+  winningNumbers: DrawWinningNumbers;
+  resultSource: string;
+  prizeAmountsByHits?: PrizeAmountsByHits;
+  lastMaxWinPrize?: string;
+  nextPossibleMaxWinPrize?: string;
+};
+
+/** Fetches latest official draw numbers for the configured game (HTTP, CSV, stub, …). */
 export interface DrawResultFetcher {
-  fetchLatestOtoslottoDraw(): Promise<
-    {
-      drawKey: string;
-      winningNumbers: OtoslottoLine;
-      resultSource: string;
-      prizeAmountsByHits?: OtoslottoPrizeAmountsByHits;
-      lastMaxWinPrize?: string;
-      nextPossibleMaxWinPrize?: string;
-    } | null
-  >;
+  fetchLatestDraw(): Promise<FetchedDrawResult | null>;
 }

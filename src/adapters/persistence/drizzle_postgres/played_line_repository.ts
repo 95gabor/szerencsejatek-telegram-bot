@@ -1,5 +1,11 @@
 import { and, asc, eq } from "npm:drizzle-orm@0.45.1";
-import { type OtoslottoLine, parseOtoslottoLine } from "../../../domain/otoslotto/mod.ts";
+import {
+  parseLineForGame,
+  parseSupportedGameId,
+  type PlayedLine,
+  serializeLineForGame,
+  type SupportedGameId,
+} from "../../../domain/mod.ts";
 import type { PlayedLineRecord, PlayedLineRepository, UserRecord } from "../../../ports/mod.ts";
 import type { AppPostgresDatabase } from "./client.ts";
 import { playedLines, users } from "./schema.ts";
@@ -8,6 +14,7 @@ export class DrizzlePostgresPlayedLineRepository implements PlayedLineRepository
   constructor(private readonly db: AppPostgresDatabase) {}
 
   async listLinesForUser(userId: string, gameId: string): Promise<PlayedLineRecord[]> {
+    const supportedGameId = parseSupportedGameId(gameId);
     const rows = await this.db
       .select({
         lineId: playedLines.id,
@@ -21,10 +28,7 @@ export class DrizzlePostgresPlayedLineRepository implements PlayedLineRepository
     const out: PlayedLineRecord[] = [];
     for (const r of rows) {
       const raw: unknown = JSON.parse(r.numbersJson);
-      if (!Array.isArray(raw) || raw.some((n) => typeof n !== "number")) {
-        throw new Error(`Invalid numbers_json for line ${r.lineId}`);
-      }
-      const numbers = parseOtoslottoLine(raw as number[]);
+      const numbers = parseLineForGame(supportedGameId, raw);
       out.push({
         id: r.lineId,
         userId: r.userId,
@@ -36,15 +40,15 @@ export class DrizzlePostgresPlayedLineRepository implements PlayedLineRepository
 
   async addLine(input: {
     userId: string;
-    gameId: string;
-    numbers: OtoslottoLine;
+    gameId: SupportedGameId;
+    numbers: PlayedLine;
   }): Promise<{ id: string }> {
     const id = crypto.randomUUID();
     await this.db.insert(playedLines).values({
       id,
       userId: input.userId,
       gameId: input.gameId,
-      numbersJson: JSON.stringify([...input.numbers]),
+      numbersJson: serializeLineForGame(input.gameId, input.numbers),
       createdAt: new Date(),
     });
     return { id };
@@ -64,6 +68,7 @@ export class DrizzlePostgresPlayedLineRepository implements PlayedLineRepository
       lines: PlayedLineRecord[];
     }>
   > {
+    const supportedGameId = parseSupportedGameId(gameId);
     const rows = await this.db
       .select({
         userId: users.id,
@@ -95,10 +100,7 @@ export class DrizzlePostgresPlayedLineRepository implements PlayedLineRepository
         byUser.set(r.userId, bucket);
       }
       const raw: unknown = JSON.parse(r.numbersJson);
-      if (!Array.isArray(raw) || raw.some((n) => typeof n !== "number")) {
-        throw new Error(`Invalid numbers_json for line ${r.lineId}`);
-      }
-      const numbers = parseOtoslottoLine(raw as number[]);
+      const numbers = parseLineForGame(supportedGameId, raw);
       bucket.lines.push({
         id: r.lineId,
         userId: r.userId,

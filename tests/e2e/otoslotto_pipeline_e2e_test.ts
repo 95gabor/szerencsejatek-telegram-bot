@@ -53,7 +53,7 @@ Deno.test({
     const sentMessages: Array<{ chatId: bigint; text: string }> = [];
 
     const fetcher: DrawResultFetcher = {
-      fetchLatestOtoslottoDraw() {
+      fetchLatestDraw() {
         return Promise.resolve({
           drawKey,
           winningNumbers: [...otoslottoFive],
