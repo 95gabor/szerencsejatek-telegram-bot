@@ -1,95 +1,70 @@
 import { desc, eq } from "npm:drizzle-orm@0.45.1";
 import {
-  type OtoslottoLine,
-  type OtoslottoPrizeAmountsByHits,
-  parseOtoslottoLine,
-  parseOtoslottoMaxWinPrizes,
-  parseOtoslottoPrizeAmountsByHits,
-} from "../../../domain/otoslotto/mod.ts";
+  type DrawWinningNumbers,
+  parseDrawPayloadForGame,
+  parseSupportedGameId,
+  type PrizeAmountsByHits,
+  serializeDrawPayloadForGame,
+  type SupportedGameId,
+} from "../../../domain/mod.ts";
 import type { DrawRecordRepository, StoredDrawRecord } from "../../../ports/mod.ts";
 import type { AppPostgresDatabase } from "./client.ts";
 import { draws } from "./schema.ts";
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return value !== null && typeof value === "object" && !Array.isArray(value);
-}
 
 export class DrizzlePostgresDrawRecordRepository implements DrawRecordRepository {
   constructor(private readonly db: AppPostgresDatabase) {}
 
   async getLatestDraw(gameId: string): Promise<StoredDrawRecord | null> {
+    const supportedGameId = parseSupportedGameId(gameId);
     const rows = await this.db
       .select({
+        gameId: draws.gameId,
         drawKey: draws.drawKey,
         numbersJson: draws.numbersJson,
         resultSource: draws.resultSource,
       })
       .from(draws)
-      .where(eq(draws.gameId, gameId))
+      .where(eq(draws.gameId, supportedGameId))
       .orderBy(desc(draws.createdAt))
       .limit(1);
 
     const r = rows[0];
     if (!r) return null;
 
-    const rawPayload: unknown = JSON.parse(r.numbersJson);
-    const winningNumbersPayload = Array.isArray(rawPayload)
-      ? rawPayload
-      : isRecord(rawPayload)
-      ? rawPayload.winningNumbers
-      : null;
-    if (
-      !Array.isArray(winningNumbersPayload) ||
-      winningNumbersPayload.some((n) => typeof n !== "number")
-    ) {
-      throw new Error(`Invalid numbers_json for draw ${r.drawKey}`);
-    }
-    const winningNumbers = parseOtoslottoLine(winningNumbersPayload);
-    const prizeAmountsByHits = isRecord(rawPayload)
-      ? parseOtoslottoPrizeAmountsByHits(rawPayload.prizeAmountsByHits)
-      : undefined;
-    const maxWinPrizes = isRecord(rawPayload)
-      ? parseOtoslottoMaxWinPrizes({
-        lastMaxWinPrize: rawPayload.lastMaxWinPrize,
-        nextPossibleMaxWinPrize: rawPayload.nextPossibleMaxWinPrize,
-      })
-      : undefined;
+    const payload = parseDrawPayloadForGame(supportedGameId, JSON.parse(r.numbersJson));
     return {
+      gameId: supportedGameId,
       drawKey: r.drawKey,
-      winningNumbers,
+      winningNumbers: payload.winningNumbers,
       resultSource: r.resultSource,
-      prizeAmountsByHits,
-      ...maxWinPrizes,
+      prizeAmountsByHits: payload.prizeAmountsByHits,
+      lastMaxWinPrize: payload.lastMaxWinPrize,
+      nextPossibleMaxWinPrize: payload.nextPossibleMaxWinPrize,
     };
   }
 
   async tryInsertDraw(input: {
-    gameId: string;
+    gameId: SupportedGameId;
     drawKey: string;
-    winningNumbers: OtoslottoLine;
+    winningNumbers: DrawWinningNumbers;
     resultSource: string;
-    prizeAmountsByHits?: OtoslottoPrizeAmountsByHits;
+    prizeAmountsByHits?: PrizeAmountsByHits;
     lastMaxWinPrize?: string;
     nextPossibleMaxWinPrize?: string;
   }): Promise<boolean> {
     const id = crypto.randomUUID();
-    const prizeAmountsByHits = parseOtoslottoPrizeAmountsByHits(input.prizeAmountsByHits);
-    const maxWinPrizes = parseOtoslottoMaxWinPrizes({
-      lastMaxWinPrize: input.lastMaxWinPrize,
-      nextPossibleMaxWinPrize: input.nextPossibleMaxWinPrize,
-    });
-    const numbersPayload = {
-      winningNumbers: [...input.winningNumbers],
-      ...(prizeAmountsByHits ? { prizeAmountsByHits } : {}),
-      ...(maxWinPrizes ?? {}),
-    };
     const inserted = await this.db
       .insert(draws)
       .values({
         id,
         gameId: input.gameId,
         drawKey: input.drawKey,
-        numbersJson: JSON.stringify(numbersPayload),
+        numbersJson: serializeDrawPayloadForGame(input.gameId, {
+          winningNumbers: input.winningNumbers,
+          prizeAmountsByHits: input.prizeAmountsByHits,
+          lastMaxWinPrize: input.lastMaxWinPrize,
+          nextPossibleMaxWinPrize: input.nextPossibleMaxWinPrize,
+        }),
         resultSource: input.resultSource,
         createdAt: new Date(),
       })

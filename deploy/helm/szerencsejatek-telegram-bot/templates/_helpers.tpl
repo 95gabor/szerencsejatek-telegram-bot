@@ -94,6 +94,10 @@ Container env vars (server.ts / loadConfig)
 - name: OTOSLOTTO_RESULT_JSON_URL
   value: {{ .Values.config.otoslottoResultJsonUrl | quote }}
 {{- end }}
+{{- if .Values.config.eurojackpotResultJsonUrl }}
+- name: EUROJACKPOT_RESULT_JSON_URL
+  value: {{ .Values.config.eurojackpotResultJsonUrl | quote }}
+{{- end }}
 {{- if .Values.config.otel.exporterOtlpEndpoint }}
 - name: OTEL_EXPORTER_OTLP_ENDPOINT
   value: {{ .Values.config.otel.exporterOtlpEndpoint | quote }}

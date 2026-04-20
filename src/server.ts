@@ -1,9 +1,9 @@
 import { trace } from "@opentelemetry/api";
 import { Bot, webhookCallback } from "grammy";
 import { cloudEventFromHttpRequest } from "./adapters/http/cloudevents_request.ts";
+import { createDrawResultFetcher } from "./adapters/ingestion/create_draw_result_fetcher.ts";
 import { NoopOutboundNotifier } from "./adapters/notify/noop_notifier.ts";
 import { TelegramOutboundNotifier } from "./adapters/notify/telegram_notifier.ts";
-import { BetHuOtoslottoFetcher } from "./adapters/ingestion/bet_hu_otoslotto_fetcher.ts";
 import { createPersistenceBundle } from "./adapters/persistence/drizzle/persistence_factory.ts";
 import { createPipelineEmitter, dispatchPipelineEvent } from "./application/dispatch.ts";
 import { loadConfig } from "./config/env.ts";
@@ -12,6 +12,7 @@ import {
   type DrawUpdateRequestedData,
   EVENT_TYPE_DRAW_UPDATE_REQUESTED,
 } from "./events/otoslotto_pipeline.ts";
+import { parseSupportedGameId } from "./domain/mod.ts";
 import { configureLogger, getLogger } from "./logging/mod.ts";
 import {
   httpDurationMs,
@@ -34,7 +35,7 @@ initObservability({
 });
 
 const databaseUrl = config.DATABASE_URL;
-const gameId = config.GAME_ID;
+const gameId = parseSupportedGameId(config.GAME_ID);
 const port = config.PORT;
 const botToken = config.BOT_TOKEN;
 const webhookBaseUrl = config.WEBHOOK_URL;
@@ -47,7 +48,11 @@ const TELEGRAM_INIT_RETRY_DELAYS_MS = [1000, 2000, 5000, 10000, 30000];
 
 await Deno.mkdir("data", { recursive: true });
 const { users, lines, draws } = await createPersistenceBundle(databaseUrl);
-const fetcher = new BetHuOtoslottoFetcher({ url: config.OTOSLOTTO_RESULT_JSON_URL });
+const fetcher = createDrawResultFetcher({
+  gameId,
+  otoslottoUrl: config.OTOSLOTTO_RESULT_JSON_URL,
+  eurojackpotUrl: config.EUROJACKPOT_RESULT_JSON_URL,
+});
 
 const notifierState: { delegate: OutboundNotifier | null } = {
   delegate: botToken ? null : new NoopOutboundNotifier(),
@@ -173,7 +178,7 @@ if (denoCronResultCheckEnabled) {
     });
     Deno.exit(1);
   }
-  const cronName = "otoslotto-hourly-draw-update";
+  const cronName = `${gameId}-hourly-draw-update`;
   const cronSchedule = "0 * * * *";
   denoCron(cronName, cronSchedule, async () => {
     const event = createCloudEvent<DrawUpdateRequestedData>({

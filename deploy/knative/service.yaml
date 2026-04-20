@@ -19,6 +19,10 @@ spec:
               value: file:/data/app.db
             - name: GAME_ID
               value: otoslotto
+            # - name: OTOSLOTTO_RESULT_JSON_URL
+            #   value: https://www.magayo.com/lotto/hungary/otoslotto-results/
+            # - name: EUROJACKPOT_RESULT_JSON_URL
+            #   value: https://www.euro-jackpot.net/en/results/
             # Scale-to-zero: set WEBHOOK_URL to the public HTTPS URL of this Knative Service
             # (Kourier/ingress) + TELEGRAM_WEBHOOK_PATH (default /telegram/webhook).
             # - name: WEBHOOK_URL

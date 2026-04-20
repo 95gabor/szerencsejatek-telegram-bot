@@ -70,16 +70,16 @@ Use the **same semver** for `--version` and `image.tag` as the release you insta
 
 ## Values (overview)
 
-| Area                  | Keys                                                                                                  |
-| --------------------- | ----------------------------------------------------------------------------------------------------- |
-| Image                 | `image.repository`, `image.tag`, `image.pullPolicy`                                                   |
-| Workload              | `knative.enabled`, `workload.mode` (`longPolling` \| `httpServer`), `deployment.*`                    |
-| CronJob               | `cronjob.enabled`, `cronjob.schedule`, `cronjob.suspend` (POSTs to in-cluster `server.ts` URL)        |
-| Telegram              | `telegram.existingSecret`, `telegram.botToken`, `config.webhookUrl`, `telegramWebhook.existingSecret` |
-| App                   | `config.gameId`, `config.logFormat`, `config.otel.*`, `config.otoslottoResultJsonUrl`                 |
-| Storage               | `persistence.enabled`, `persistence.size`, `persistence.storageClass`                                 |
-| Eventing              | `eventing.enabled`, `eventing.brokerName`                                                             |
-| Ingress (non-Knative) | `ingress.enabled`, `ingress.hosts`                                                                    |
+| Area                  | Keys                                                                                                                     |
+| --------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| Image                 | `image.repository`, `image.tag`, `image.pullPolicy`                                                                      |
+| Workload              | `knative.enabled`, `workload.mode` (`longPolling` \| `httpServer`), `deployment.*`                                       |
+| CronJob               | `cronjob.enabled`, `cronjob.schedule`, `cronjob.suspend` (POSTs to in-cluster `server.ts` URL)                           |
+| Telegram              | `telegram.existingSecret`, `telegram.botToken`, `config.webhookUrl`, `telegramWebhook.existingSecret`                    |
+| App                   | `config.gameId`, `config.logFormat`, `config.otel.*`, `config.otoslottoResultJsonUrl`, `config.eurojackpotResultJsonUrl` |
+| Storage               | `persistence.enabled`, `persistence.size`, `persistence.storageClass`                                                    |
+| Eventing              | `eventing.enabled`, `eventing.brokerName`                                                                                |
+| Ingress (non-Knative) | `ingress.enabled`, `ingress.hosts`                                                                                       |
 
 See **`values.yaml`** for defaults and comments.
 

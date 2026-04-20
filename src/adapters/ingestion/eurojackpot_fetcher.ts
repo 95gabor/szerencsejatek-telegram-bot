@@ -1,0 +1,202 @@
+import {
+  type EurojackpotLine,
+  InvalidEurojackpotLineError,
+  parseEurojackpotLine,
+} from "../../domain/eurojackpot/mod.ts";
+import { getLogger } from "../../logging/mod.ts";
+import type { DrawResultFetcher, FetchedDrawResult } from "../../ports/draw_result_fetcher.ts";
+
+export const DEFAULT_EUROJACKPOT_RESULT_JSON_URL = "https://www.euro-jackpot.net/en/results/";
+
+const RESULT_SOURCE_LABEL = "euro-jackpot.net results";
+
+function parseEnglishDateToDrawKey(dateText: string): string | null {
+  const normalizedDateText = dateText
+    .trim()
+    .replace(/^[A-Za-z]+,\s*/g, "")
+    .replace(/^[A-Za-z]+\s+/g, "");
+  const m = normalizedDateText.match(/^(\d{1,2})\s+([A-Za-z]+)\s+(\d{4})$/);
+  if (!m) return null;
+  const day = Number.parseInt(m[1] ?? "", 10);
+  const monthName = (m[2] ?? "").toLowerCase();
+  const year = Number.parseInt(m[3] ?? "", 10);
+  const monthByName: Record<string, number> = {
+    january: 1,
+    february: 2,
+    march: 3,
+    april: 4,
+    may: 5,
+    june: 6,
+    july: 7,
+    august: 8,
+    september: 9,
+    october: 10,
+    november: 11,
+    december: 12,
+  };
+  const month = monthByName[monthName];
+  if (!Number.isInteger(year) || !Number.isInteger(day) || !month || day < 1 || day > 31) {
+    return null;
+  }
+  return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+}
+
+function normalizePrizeAmount(value: string): string | undefined {
+  const hasEuroSign = value.includes("€");
+  const normalized = value
+    .replaceAll("€", "")
+    .replaceAll(",", " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (normalized.length === 0) return undefined;
+  if (/\b[A-Z]{3}\b/.test(normalized)) {
+    return normalized;
+  }
+  return hasEuroSign ? `${normalized} EUR` : undefined;
+}
+
+function extractJackpotAmount(text: string): string | undefined {
+  if (text.trim().length === 0) return undefined;
+  const amountMatch = text.match(/(?:€\s*)?[0-9][0-9\s,.]*/);
+  if (!amountMatch) return undefined;
+  return normalizePrizeAmount(amountMatch[0] ?? "");
+}
+
+export function parseEurojackpotLatestFromHtml(
+  html: string,
+): {
+  drawKey: string;
+  winningNumbers: EurojackpotLine;
+  lastMaxWinPrize?: string;
+  nextPossibleMaxWinPrize?: string;
+} | null {
+  const dateMatch = html.match(/<h2[^>]*>[^<]*Results for\s+([^<]+)<\/h2>/i);
+  const drawKey = parseEnglishDateToDrawKey(dateMatch?.[1] ?? "");
+  if (!drawKey) {
+    return null;
+  }
+
+  const mainBallNumbers = [...html.matchAll(/class="ball[^"]*">\s*(\d{1,2})\s*</gi)]
+    .map((m) => Number.parseInt(m[1] ?? "", 10))
+    .filter((n) => Number.isInteger(n));
+  const euroBallNumbers = [...html.matchAll(/class="euro-ball[^"]*">\s*(\d{1,2})\s*</gi)]
+    .map((m) => Number.parseInt(m[1] ?? "", 10))
+    .filter((n) => Number.isInteger(n));
+
+  let main: number[];
+  let euro: number[];
+  if (mainBallNumbers.length >= 5 && euroBallNumbers.length >= 2) {
+    main = mainBallNumbers.slice(0, 5);
+    euro = euroBallNumbers.slice(0, 2);
+  } else {
+    const allBallNumbers = [...html.matchAll(/class="(?:ball|euro-ball)[^"]*">\s*(\d{1,2})\s*</gi)]
+      .map((m) => Number.parseInt(m[1] ?? "", 10))
+      .filter((n) => Number.isInteger(n));
+    if (allBallNumbers.length < 7) {
+      return null;
+    }
+    main = allBallNumbers.slice(0, 5);
+    euro = allBallNumbers.slice(5, 7);
+  }
+
+  if (main.length < 5 || euro.length < 2) {
+    return null;
+  }
+  let winningNumbers: EurojackpotLine;
+  try {
+    winningNumbers = parseEurojackpotLine({ main, euro });
+  } catch {
+    return null;
+  }
+
+  const nextPossibleMaxWinPrize = extractJackpotAmount(
+    html.match(/\bnext\b[^<]{0,160}\bjackpot\b[^<]{0,200}/i)?.[0] ?? "",
+  );
+  const lastMaxWinPrize = extractJackpotAmount(
+    html.match(/\b(?:last|previous)\b[^<]{0,160}\bjackpot\b[^<]{0,200}/i)?.[0] ?? "",
+  );
+
+  return {
+    drawKey,
+    winningNumbers,
+    ...(lastMaxWinPrize ? { lastMaxWinPrize } : {}),
+    ...(nextPossibleMaxWinPrize ? { nextPossibleMaxWinPrize } : {}),
+  };
+}
+
+export type EurojackpotFetcherOptions = {
+  url: string;
+  fetchImpl?: typeof fetch;
+};
+
+export class EurojackpotFetcher implements DrawResultFetcher {
+  private readonly url: string;
+  private readonly fetchImpl: typeof fetch;
+
+  constructor(options: EurojackpotFetcherOptions) {
+    this.url = options.url;
+    this.fetchImpl = options.fetchImpl ?? globalThis.fetch;
+  }
+
+  async fetchLatestDraw(): Promise<FetchedDrawResult | null> {
+    const log = getLogger();
+    let res: Response;
+    try {
+      res = await this.fetchImpl(this.url, {
+        headers: {
+          Accept: "text/html,application/json;q=0.9,*/*;q=0.8",
+          "User-Agent": "szerencsejatek-telegram-bot/1.0 (Eurojackpot ingestion)",
+        },
+      });
+    } catch (error) {
+      log.warn("ingestion.eurojackpot.fetch_failed", {
+        error: error instanceof Error ? error.message : String(error),
+      });
+      return null;
+    }
+
+    if (!res.ok) {
+      log.warn("ingestion.eurojackpot.http_error", {
+        status: res.status,
+        statusText: res.statusText,
+        responseUrl: res.url,
+      });
+      return null;
+    }
+
+    let html: string;
+    try {
+      html = await res.text();
+    } catch (error) {
+      log.warn("ingestion.eurojackpot.read_body_failed", {
+        error: error instanceof Error ? error.message : String(error),
+      });
+      return null;
+    }
+    const parsed = parseEurojackpotLatestFromHtml(html);
+    if (!parsed) {
+      log.warn("ingestion.eurojackpot.unexpected_shape", { responseUrl: res.url });
+      return null;
+    }
+
+    try {
+      const winningNumbers = parseEurojackpotLine({
+        main: [...parsed.winningNumbers.main],
+        euro: [...parsed.winningNumbers.euro],
+      });
+      return {
+        drawKey: parsed.drawKey,
+        winningNumbers,
+        resultSource: RESULT_SOURCE_LABEL,
+        lastMaxWinPrize: parsed.lastMaxWinPrize,
+        nextPossibleMaxWinPrize: parsed.nextPossibleMaxWinPrize,
+      };
+    } catch (error) {
+      if (error instanceof InvalidEurojackpotLineError) {
+        log.warn("ingestion.eurojackpot.invalid_line", { kind: error.reason.kind });
+        return null;
+      }
+      throw error;
+    }
+  }
+}

@@ -3,8 +3,7 @@ import {
   type DrawResultPersistData,
   EVENT_TYPE_DRAW_RESULT_PERSIST,
   isDrawUpdateRequestedEvent,
-} from "../events/otoslotto_pipeline.ts";
-import { parseOtoslottoLine } from "../domain/otoslotto/mod.ts";
+} from "../events/pipeline.ts";
 import type { DrawResultFetcher } from "../ports/draw_result_fetcher.ts";
 import type { EmitCloudEvent } from "../ports/event_emitter.ts";
 
@@ -25,17 +24,15 @@ export async function handleDrawUpdateRequested(
     return;
   }
 
-  const fetchResult = await deps.fetcher.fetchLatestOtoslottoDraw();
+  const fetchResult = await deps.fetcher.fetchLatestDraw();
   if (fetchResult === null) {
     return;
   }
 
-  const winningNumbers = parseOtoslottoLine([...fetchResult.winningNumbers]);
-
   const persistData: DrawResultPersistData = {
     gameId: deps.gameId,
     drawKey: fetchResult.drawKey,
-    winningNumbers: winningNumbers as DrawResultPersistData["winningNumbers"],
+    winningNumbers: fetchResult.winningNumbers as DrawResultPersistData["winningNumbers"],
     resultSource: fetchResult.resultSource,
     prizeAmountsByHits: fetchResult.prizeAmountsByHits,
     lastMaxWinPrize: fetchResult.lastMaxWinPrize,

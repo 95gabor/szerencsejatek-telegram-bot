@@ -3,8 +3,8 @@ import {
   matchedNumbersAscending,
   OTOSLOTTO_PRIZE_HIT_COUNTS,
   type OtoslottoLine,
-  type OtoslottoPrizeAmountsByHits,
 } from "../domain/otoslotto/mod.ts";
+import type { PrizeAmountsByHits } from "../domain/mod.ts";
 import type { Locale } from "../i18n/mod.ts";
 import { t } from "../i18n/mod.ts";
 import {
@@ -34,12 +34,12 @@ export function formatOtoslottoUserMessage(
   drawKey: string,
   winningNumbers: OtoslottoLine,
   playedLines: ReadonlyArray<{ numbers: OtoslottoLine }>,
-  prizeAmountsByHits?: OtoslottoPrizeAmountsByHits,
+  prizeAmountsByHits?: PrizeAmountsByHits,
   lastMaxWinPrize?: string,
 ): string {
   const prizeLines: string[] = [];
   for (const hitCount of OTOSLOTTO_PRIZE_HIT_COUNTS) {
-    const amount = prizeAmountsByHits?.[hitCount];
+    const amount = prizeAmountsByHits?.[String(hitCount) as `${number}`];
     if (!amount) {
       continue;
     }

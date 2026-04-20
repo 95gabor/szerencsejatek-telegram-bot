@@ -1,5 +1,6 @@
 import { assertEquals } from "jsr:@std/assert@1/equals";
 import { Bot } from "grammy";
+import { GAME_ID_EUROJACKPOT } from "../domain/eurojackpot/mod.ts";
 import type { DrawResultFetcher } from "../ports/draw_result_fetcher.ts";
 import { registerTelegramHandlers } from "./register_handlers.ts";
 import type { DrawRecordRepository, PlayedLineRepository, UserRepository } from "../ports/mod.ts";
@@ -10,6 +11,7 @@ type HandlerTestOverrides = {
   lines?: PlayedLineRepository;
   draws?: DrawRecordRepository;
   fetcher?: DrawResultFetcher;
+  gameId?: string;
 };
 
 function createDeps(sentMessages: SentMessage[], overrides: HandlerTestOverrides = {}) {
@@ -41,7 +43,7 @@ function createDeps(sentMessages: SentMessage[], overrides: HandlerTestOverrides
     },
   };
   const defaultFetcher: DrawResultFetcher = {
-    fetchLatestOtoslottoDraw() {
+    fetchLatestDraw() {
       return Promise.resolve(null);
     },
   };
@@ -75,7 +77,7 @@ function createDeps(sentMessages: SentMessage[], overrides: HandlerTestOverrides
     lines,
     draws,
     fetcher,
-    gameId: "otoslotto",
+    gameId: overrides.gameId ?? "otoslotto",
     locale: "hu",
   });
   return bot;
@@ -124,6 +126,7 @@ Deno.test("/result includes weekly prize amounts when available", async () => {
     },
     getLatestDraw() {
       return Promise.resolve({
+        gameId: "otoslotto",
         drawKey: "2026-14",
         winningNumbers: [36, 45, 50, 67, 77],
         resultSource: "test-source",
@@ -175,7 +178,7 @@ Deno.test("/result includes weekly prize amounts when available", async () => {
 Deno.test("/jackpot returns last and next possible max win prizes", async () => {
   const sentMessages: SentMessage[] = [];
   const fetcher: DrawResultFetcher = {
-    fetchLatestOtoslottoDraw() {
+    fetchLatestDraw() {
       return Promise.resolve({
         drawKey: "2026-14",
         winningNumbers: [36, 45, 50, 67, 77],
@@ -214,7 +217,7 @@ Deno.test("/jackpot returns last and next possible max win prizes", async () => 
 Deno.test("/jackpot returns unavailable message when source has no jackpot info", async () => {
   const sentMessages: SentMessage[] = [];
   const fetcher: DrawResultFetcher = {
-    fetchLatestOtoslottoDraw() {
+    fetchLatestDraw() {
       return Promise.resolve({
         drawKey: "2026-14",
         winningNumbers: [36, 45, 50, 67, 77],
@@ -241,4 +244,55 @@ Deno.test("/jackpot returns unavailable message when source has no jackpot info"
     sentMessages[0]?.text,
     "A jackpot adatok most nem érhetők el. Próbáld újra később.",
   );
+});
+
+Deno.test("eurojackpot /add validates 7-number format and /lines renders plus separator", async () => {
+  const sentMessages: SentMessage[] = [];
+  const storedLines: Array<{ id: string; userId: string; numbers: unknown }> = [];
+  const lines: PlayedLineRepository = {
+    listUsersWithLines() {
+      return Promise.resolve([]);
+    },
+    listLinesForUser() {
+      return Promise.resolve(storedLines as never);
+    },
+    addLine(input) {
+      storedLines.push({ id: "line-1", userId: input.userId, numbers: input.numbers });
+      return Promise.resolve({ id: "line-1" });
+    },
+    removeLine() {
+      return Promise.resolve(false);
+    },
+  };
+  const bot = createDeps(sentMessages, { lines, gameId: GAME_ID_EUROJACKPOT });
+
+  await bot.handleUpdate({
+    update_id: 6,
+    message: {
+      message_id: 6,
+      date: Math.floor(Date.now() / 1000),
+      text: "/add 7 14 23 41 50 2 11",
+      from: { id: 99, is_bot: false, first_name: "Test" },
+      chat: { id: 99, type: "private", first_name: "Test" },
+      entities: [{ type: "bot_command", offset: 0, length: 4 }],
+    },
+  });
+
+  await bot.handleUpdate({
+    update_id: 7,
+    message: {
+      message_id: 7,
+      date: Math.floor(Date.now() / 1000),
+      text: "/lines",
+      from: { id: 99, is_bot: false, first_name: "Test" },
+      chat: { id: 99, type: "private", first_name: "Test" },
+      entities: [{ type: "bot_command", offset: 0, length: 6 }],
+    },
+  });
+
+  assertEquals(sentMessages.length, 2);
+  assertEquals(sentMessages[0]?.text.includes("<b>Mentve</b>"), true);
+  assertEquals(sentMessages[0]?.text.includes(" + "), true);
+  assertEquals(sentMessages[1]?.text.includes("<b>Mentett soraid</b>"), true);
+  assertEquals(sentMessages[1]?.text.includes(" + "), true);
 });

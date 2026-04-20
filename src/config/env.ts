@@ -1,6 +1,7 @@
 import { loadSync } from "@std/dotenv";
 import { z } from "zod";
 import { DEFAULT_OTOSLOTTO_RESULT_JSON_URL } from "../adapters/ingestion/bet_hu_otoslotto_fetcher.ts";
+import { DEFAULT_EUROJACKPOT_RESULT_JSON_URL } from "../adapters/ingestion/eurojackpot_fetcher.ts";
 import { DEFAULT_TELEGRAM_WEBHOOK_PATH } from "../telegram/webhook_path.ts";
 
 const emptyToUndefined = (v: unknown) => v === "" || v === undefined ? undefined : v;
@@ -50,6 +51,11 @@ const envSchema = z.object({
     (v) => (v === "" || v === undefined ? DEFAULT_OTOSLOTTO_RESULT_JSON_URL : v),
     z.string().url(),
   ),
+  /** Eurojackpot source URL (JSON expected). Empty env uses project default URL. */
+  EUROJACKPOT_RESULT_JSON_URL: z.preprocess(
+    (v) => (v === "" || v === undefined ? DEFAULT_EUROJACKPOT_RESULT_JSON_URL : v),
+    z.string().url(),
+  ),
 });
 
 export type AppConfig = z.infer<typeof envSchema>;
@@ -72,6 +78,7 @@ function readRawEnv(): Record<string, string | undefined> {
     LOG_FORMAT: Deno.env.get("LOG_FORMAT"),
     LOG_LEVEL: Deno.env.get("LOG_LEVEL"),
     OTOSLOTTO_RESULT_JSON_URL: Deno.env.get("OTOSLOTTO_RESULT_JSON_URL"),
+    EUROJACKPOT_RESULT_JSON_URL: Deno.env.get("EUROJACKPOT_RESULT_JSON_URL"),
   };
 }
 

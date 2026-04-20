@@ -1,5 +1,10 @@
 import { and, asc, eq } from "npm:drizzle-orm@0.45.1";
-import { type OtoslottoLine, parseOtoslottoLine } from "../../../domain/otoslotto/mod.ts";
+import {
+  parseLineForGame,
+  parseSupportedGameId,
+  serializeLineForGame,
+  type SupportedGameId,
+} from "../../../domain/mod.ts";
 import type { PlayedLineRecord, PlayedLineRepository, UserRecord } from "../../../ports/mod.ts";
 import type { AppDatabase } from "./client.ts";
 import { playedLines, users } from "./schema.ts";
@@ -13,6 +18,7 @@ export class DrizzlePlayedLineRepository implements PlayedLineRepository {
         lineId: playedLines.id,
         numbersJson: playedLines.numbersJson,
         userId: playedLines.userId,
+        gameId: playedLines.gameId,
       })
       .from(playedLines)
       .where(and(eq(playedLines.userId, userId), eq(playedLines.gameId, gameId)))
@@ -21,10 +27,7 @@ export class DrizzlePlayedLineRepository implements PlayedLineRepository {
     const out: PlayedLineRecord[] = [];
     for (const r of rows) {
       const raw: unknown = JSON.parse(r.numbersJson);
-      if (!Array.isArray(raw) || raw.some((n) => typeof n !== "number")) {
-        throw new Error(`Invalid numbers_json for line ${r.lineId}`);
-      }
-      const numbers = parseOtoslottoLine(raw as number[]);
+      const numbers = parseLineForGame(parseSupportedGameId(r.gameId), raw);
       out.push({
         id: r.lineId,
         userId: r.userId,
@@ -36,15 +39,15 @@ export class DrizzlePlayedLineRepository implements PlayedLineRepository {
 
   async addLine(input: {
     userId: string;
-    gameId: string;
-    numbers: OtoslottoLine;
+    gameId: SupportedGameId;
+    numbers: PlayedLineRecord["numbers"];
   }): Promise<{ id: string }> {
     const id = crypto.randomUUID();
     await this.db.insert(playedLines).values({
       id,
       userId: input.userId,
       gameId: input.gameId,
-      numbersJson: JSON.stringify([...input.numbers]),
+      numbersJson: serializeLineForGame(input.gameId, input.numbers),
       createdAt: new Date(),
     });
     return { id };
@@ -71,6 +74,7 @@ export class DrizzlePlayedLineRepository implements PlayedLineRepository {
         chatId: users.chatId,
         lineId: playedLines.id,
         numbersJson: playedLines.numbersJson,
+        gameId: playedLines.gameId,
       })
       .from(playedLines)
       .innerJoin(users, eq(playedLines.userId, users.id))
@@ -95,10 +99,7 @@ export class DrizzlePlayedLineRepository implements PlayedLineRepository {
         byUser.set(r.userId, bucket);
       }
       const raw: unknown = JSON.parse(r.numbersJson);
-      if (!Array.isArray(raw) || raw.some((n) => typeof n !== "number")) {
-        throw new Error(`Invalid numbers_json for line ${r.lineId}`);
-      }
-      const numbers = parseOtoslottoLine(raw as number[]);
+      const numbers = parseLineForGame(parseSupportedGameId(r.gameId), raw);
       bucket.lines.push({
         id: r.lineId,
         userId: r.userId,

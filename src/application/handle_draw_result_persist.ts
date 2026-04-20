@@ -3,8 +3,8 @@ import {
   type DrawResultStoredData,
   EVENT_TYPE_DRAW_RESULT_STORED,
   isDrawResultPersistEvent,
-} from "../events/otoslotto_pipeline.ts";
-import { parseOtoslottoLine } from "../domain/otoslotto/mod.ts";
+} from "../events/pipeline.ts";
+import { parseLineForGame, parseSupportedGameId } from "../domain/mod.ts";
 import type { DrawRecordRepository } from "../ports/repositories.ts";
 import type { EmitCloudEvent } from "../ports/event_emitter.ts";
 
@@ -29,10 +29,11 @@ export async function handleDrawResultPersist(
     return;
   }
 
-  const winningNumbers = parseOtoslottoLine([...persistPayload.winningNumbers]);
+  const gameId = parseSupportedGameId(persistPayload.gameId);
+  const winningNumbers = parseLineForGame(gameId, persistPayload.winningNumbers);
 
   const wasInserted = await deps.draws.tryInsertDraw({
-    gameId: persistPayload.gameId,
+    gameId,
     drawKey: persistPayload.drawKey,
     winningNumbers,
     resultSource: persistPayload.resultSource,
@@ -46,9 +47,9 @@ export async function handleDrawResultPersist(
   }
 
   const storedData: DrawResultStoredData = {
-    gameId: persistPayload.gameId,
+    gameId,
     drawKey: persistPayload.drawKey,
-    winningNumbers: winningNumbers as DrawResultStoredData["winningNumbers"],
+    winningNumbers,
     resultSource: persistPayload.resultSource,
     prizeAmountsByHits: persistPayload.prizeAmountsByHits,
     lastMaxWinPrize: persistPayload.lastMaxWinPrize,

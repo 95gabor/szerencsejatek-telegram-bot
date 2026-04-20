@@ -5,7 +5,7 @@ import {
   isDrawResultStoredEvent,
   isDrawUpdateRequestedEvent,
   isUserNotificationRequestedEvent,
-} from "../events/otoslotto_pipeline.ts";
+} from "../events/pipeline.ts";
 import { getLogger } from "../logging/mod.ts";
 import { pipelineEvents } from "../observability/mod.ts";
 import type { DrawResultFetcher } from "../ports/draw_result_fetcher.ts";
@@ -33,7 +33,7 @@ export type PipelineDeps = {
 export type PipelineDepsWithoutEmit = Omit<PipelineDeps, "emit">;
 
 /**
- * Routes CloudEvents through the Ötöslottó pipeline (update → persist → stored → notification).
+ * Routes CloudEvents through the draw pipeline (update → persist → stored → notification).
  */
 export async function dispatchPipelineEvent(
   event: CloudEvent<unknown>,

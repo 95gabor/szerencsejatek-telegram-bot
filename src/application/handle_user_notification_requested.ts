@@ -1,5 +1,5 @@
 import type { CloudEvent } from "../events/cloudevents.ts";
-import { isUserNotificationRequestedEvent } from "../events/otoslotto_pipeline.ts";
+import { isUserNotificationRequestedEvent } from "../events/pipeline.ts";
 import type { OutboundNotifier } from "../ports/outbound_notifier.ts";
 
 export type HandleUserNotificationRequestedDeps = {

@@ -2,7 +2,7 @@
 
 /**
  * Triggers the draw pipeline on a running HTTP server: POST a
- * `dev.szerencsejatek.telegram.otoslotto.draw.update.requested.v1` CloudEvent to `POST /`
+ * `dev.szerencsejatek.telegram.draw.update.requested.v1` CloudEvent to `POST /`
  * (same as Knative/Eventing or the Helm **CronJob** would).
  *
  * Requires `server.ts` listening (e.g. `deno task start`, or the **pipeline** container in Helm
