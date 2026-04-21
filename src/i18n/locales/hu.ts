@@ -4,45 +4,49 @@
  */
 export const huMessages = {
   "telegram.welcome":
-    "<b>Üdvözöllek a Szerencsejáték értesítő botban.</b>\n\nItt elmentheted az Ötöslottó szelvényeid számait; ha megjelennek a hivatalos eredmények, értesítünk.\n\n<b>Parancsok</b>\n" +
-    "• /add <code>1</code> <code>2</code> <code>3</code> <code>4</code> <code>5</code> — öt különböző szám (1–90) szóközzel\n" +
-    "• /lines — mentett soraid listája\n" +
-    "• /remove &lt;sorszám&gt; — törlés (a /lines szerinti sorszám, pl. /remove <code>1</code>)\n" +
-    "• /result — utolsó rögzített eredmény; heti nyeremények és max nyeremény, valamint mentett szelvényeidre találatszám és egyező számok (növekvő)\n" +
+    "<b>Üdvözöllek a Szerencsejáték értesítő botban.</b>\n\nItt több játékhoz is elmentheted a szelvényeid számait; ha megjelennek a hivatalos eredmények, értesítünk.\n\n<b>Parancsok</b>\n" +
+    "• /add otoslotto <code>1</code> <code>2</code> <code>3</code> <code>4</code> <code>5</code> — mentés játék szerint\n" +
+    "• /add eurojackpot <code>1</code> <code>2</code> <code>3</code> <code>4</code> <code>5</code> <code>1</code> <code>2</code> — mentés játék szerint\n" +
+    "• /lines [játék] — összes vagy csak az adott játék mentett sorai\n" +
+    "• /remove &lt;játék&gt; &lt;sorszám&gt; — törlés adott játékon belüli index szerint\n" +
+    "• /result [játék] — utolsó rögzített eredmény(ek) a mentett soraidhoz\n" +
     "• /jackpot — utolsó és következő várható max nyeremény (forrás: ...)\n" +
-    "• /help — részletes útmutató",
-  "telegram.welcome_eurojackpot":
-    "<b>Üdvözöllek a Szerencsejáték értesítő botban.</b>\n\nItt elmentheted a Eurojackpot szelvényeid számait; ha megjelennek a hivatalos eredmények, értesítünk.\n\n<b>Parancsok</b>\n" +
-    "• /add <code>1</code> <code>2</code> <code>3</code> <code>4</code> <code>5</code> <code>1</code> <code>2</code> — 5 főszám (1–50) és 2 euro szám (1–12)\n" +
-    "• /lines — mentett soraid listája\n" +
-    "• /remove &lt;sorszám&gt; — törlés (a /lines szerinti sorszám, pl. /remove <code>1</code>)\n" +
-    "• /result — utolsó rögzített eredmény; nyerőszámok és mentett szelvényeidre találatok\n" +
-    "• /jackpot — utolsó és következő várható max nyeremény (forrás: ...)\n" +
-    "• /help — részletes útmutató",
-
+    "• /help — általános útmutató\n" +
+    "• /help otoslotto | /help eurojackpot — játék-specifikus útmutató",
+  "telegram.help_general":
+    "<b>Szerencsejáték bot súgó</b>\n\n<b>Támogatott játékok</b>\n• otoslotto\n• eurojackpot\n\n<b>Alap parancsok</b>\n" +
+    "/add &lt;játék&gt; &lt;számok...&gt;\n" +
+    "/lines [játék]\n" +
+    "/remove &lt;játék&gt; &lt;sorszám&gt;\n" +
+    "/result [játék]\n" +
+    "/jackpot\n\n" +
+    "<b>Játék-specifikus súgó</b>\n" +
+    "/help otoslotto\n" +
+    "/help eurojackpot",
   "telegram.help":
     "<b>Ötöslottó</b>\nMinden szelvényhez pontosan 5 különböző egész szám kell, mindegyik 1 és 90 között.\n\n<b>Parancsok</b>\n" +
-    "/help — ez a részletes útmutató megjelenítése.\n\n" +
+    "/help otoslotto — ez a részletes útmutató megjelenítése.\n\n" +
     "<b>Új szelvény</b>\n" +
-    "/add <code>7</code> <code>14</code> <code>23</code> <code>41</code> <code>88</code>\n\n" +
-    "<b>Szelvényeid</b>\n/lines — sorszámozott lista.\n\n" +
-    "<b>Utolsó eredmény</b>\n/result — utolsó tárolt nyerőszámok, heti nyeremények és max nyeremény; ha van mentett szelvényed, soronként találat és egyező számok növekvő sorrendben.\n\n" +
+    "/add otoslotto <code>7</code> <code>14</code> <code>23</code> <code>41</code> <code>88</code> — mentéskor a visszaigazolás tartalmazza a játék nevét.\n\n" +
+    "<b>Szelvényeid</b>\n/lines — minden játék mentett sorai.\n/lines otoslotto — csak Ötöslottó sorok ID-val és indexszel.\n\n" +
+    "<b>Utolsó eredmény</b>\n/result — minden olyan játék eredménye, ahol van mentett sorod.\n/result otoslotto — csak Ötöslottó eredmény.\n\n" +
     "<b>Jackpot</b>\n/jackpot — utolsó és következő várható max nyeremény (forrás: ...).\n\n" +
-    "<b>Törlés</b>\n/remove <code>1</code> törli az 1. sort a listából (a /lines szerinti sorszámot).\n\n" +
+    "<b>Törlés</b>\n/remove otoslotto <code>1</code> törli az Ötöslottó 1. sort (játékon belüli index), és a visszaigazolásban megjelenik a játék neve.\n\n" +
     "A bot nem fogad fogadást; csak tárolja a megadott számokat és összeveti a nyerőszámokkal.",
   "telegram.help_eurojackpot":
     "<b>Eurojackpot</b>\nMinden szelvényhez pontosan 5 különböző főszám kell (1–50), valamint 2 különböző euro szám (1–12).\n\n<b>Parancsok</b>\n" +
-    "/help — ez a részletes útmutató megjelenítése.\n\n" +
+    "/help eurojackpot — ez a részletes útmutató megjelenítése.\n\n" +
     "<b>Új szelvény</b>\n" +
-    "/add <code>7</code> <code>14</code> <code>23</code> <code>41</code> <code>50</code> <code>2</code> <code>11</code>\n\n" +
-    "<b>Szelvényeid</b>\n/lines — sorszámozott lista.\n\n" +
-    "<b>Utolsó eredmény</b>\n/result — utolsó tárolt nyerőszámok és max nyeremény; ha van mentett szelvényed, soronként fő/euro találat és egyező számok növekvő sorrendben.\n\n" +
+    "/add eurojackpot <code>7</code> <code>14</code> <code>23</code> <code>41</code> <code>50</code> <code>2</code> <code>11</code> — mentéskor a visszaigazolás tartalmazza a játék nevét.\n\n" +
+    "<b>Szelvényeid</b>\n/lines — minden játék mentett sorai.\n/lines eurojackpot — csak Eurojackpot sorok ID-val és indexszel.\n\n" +
+    "<b>Utolsó eredmény</b>\n/result — minden olyan játék eredménye, ahol van mentett sorod.\n/result eurojackpot — csak Eurojackpot eredmény.\n\n" +
     "<b>Jackpot</b>\n/jackpot — utolsó és következő várható max nyeremény (forrás: ...).\n\n" +
-    "<b>Törlés</b>\n/remove <code>1</code> törli az 1. sort a listából (a /lines szerinti sorszámot).\n\n" +
+    "<b>Törlés</b>\n/remove eurojackpot <code>1</code> törli az Eurojackpot 1. sort (játékon belüli index), és a visszaigazolásban megjelenik a játék neve.\n\n" +
     "A bot nem fogad fogadást; csak tárolja a megadott számokat és összeveti a nyerőszámokkal.",
 
   "telegram.last_draw_none":
     "Még nincs rögzített sorsolási eredmény. Amint a bot megkapja a hivatalos nyerőszámokat, itt is megjelennek — addig a /result üres marad.",
+  "telegram.result_no_lines": "Nincs mentett sorod egyik játékhoz sem. Használd az /add parancsot.",
 
   "telegram.last_draw_source": "<b>Forrás:</b> {{source}}",
   "telegram.jackpot_title": "<b>Ötöslottó jackpot</b>",
@@ -52,25 +56,28 @@ export const huMessages = {
   "telegram.jackpot_source": "<b>Forrás:</b> {{source}}",
   "telegram.jackpot_unavailable": "A jackpot adatok most nem érhetők el. Próbáld újra később.",
 
-  "telegram.add_usage":
-    "Használat: /add <code>1</code> <code>2</code> <code>3</code> <code>4</code> <code>5</code> — öt különböző szám 1 és 90 között.",
-  "telegram.add_usage_eurojackpot":
-    "Használat: /add <code>1</code> <code>2</code> <code>3</code> <code>4</code> <code>5</code> <code>1</code> <code>2</code> — 5 különböző főszám 1 és 50 között, plusz 2 különböző euro szám 1 és 12 között.",
+  "telegram.add_usage_multi":
+    "Használat: /add otoslotto <code>1</code> <code>2</code> <code>3</code> <code>4</code> <code>5</code> vagy /add eurojackpot <code>1</code> <code>2</code> <code>3</code> <code>4</code> <code>5</code> <code>1</code> <code>2</code>.",
 
-  "telegram.remove_usage": "Használat: /remove &lt;sorszám&gt; — előbb nézd meg a /lines listát.",
+  "telegram.game_usage":
+    "Érvénytelen játék. Használd: <code>otoslotto</code> vagy <code>eurojackpot</code>.",
+  "telegram.help_usage": "Használat: /help vagy /help &lt;játék&gt; (otoslotto | eurojackpot).",
+  "telegram.remove_usage_multi":
+    "Használat: /remove &lt;játék&gt; &lt;sorszám&gt; — pl. /remove otoslotto <code>1</code>.",
 
   "telegram.add_numbers_must_be_numeric": "Minden mezőnek számnak kell lennie.\n{{usage}}",
 
   "telegram.add_saved_label": "Mentve",
 
-  "telegram.lines_empty":
-    "Még nincs mentett szelvényed. Adj hozzá: /add <code>1</code> <code>2</code> <code>3</code> <code>4</code> <code>5</code>",
-  "telegram.lines_empty_eurojackpot":
-    "Még nincs mentett szelvényed. Adj hozzá: /add <code>1</code> <code>2</code> <code>3</code> <code>4</code> <code>5</code> <code>1</code> <code>2</code>",
+  "telegram.lines_empty_multi":
+    "Még nincs mentett szelvényed. Példa: /add otoslotto <code>1</code> <code>2</code> <code>3</code> <code>4</code> <code>5</code>",
 
   "telegram.lines_title": "Mentett soraid",
+  "telegram.game_name_otoslotto": "Ötöslottó",
+  "telegram.game_name_eurojackpot": "Eurojackpot",
 
-  "telegram.remove_bad_index": "Nincs ilyen sorszám. Használd a /lines parancsot.",
+  "telegram.remove_bad_index_multi":
+    "Nincs ilyen sorszám ebben a játékban. Használd a /lines &lt;játék&gt; parancsot.",
 
   "telegram.remove_deleted_label": "Törölve",
 
@@ -102,12 +109,12 @@ export const huMessages = {
   "draw_result.max_win_line": "Utolsó max nyeremény: {{amount}}",
 
   "draw_result.line":
-    "<b>{{index}}.</b> sor · <b>{{hits}}</b> találat · egyező (növ.): {{matched_asc}}\nSzelvény: {{numbers}}",
+    "<b>{{index}}.</b> sor · <b>{{game_name}}</b> · <b>{{hits}}</b> találat · egyező (növ.): {{matched_asc}}\nSzelvény: {{numbers}}",
   "draw_result.eurojackpot_title": "<b>Eurojackpot</b> — <code>{{drawKey}}</code>",
   "draw_result.eurojackpot_winning_main_label": "Nyerőszámok (fő)",
   "draw_result.eurojackpot_winning_euro_label": "Euro számok",
   "draw_result.eurojackpot_line":
-    "<b>{{index}}.</b> sor · fő találat: <b>{{main_hits}}</b> · euro találat: <b>{{euro_hits}}</b>\nEgyező fő (növ.): {{matched_main_asc}}\nEgyező euro (növ.): {{matched_euro_asc}}\nSzelvény: {{main_numbers}} + {{euro_numbers}}",
+    "<b>{{index}}.</b> sor · <b>{{game_name}}</b> · fő találat: <b>{{main_hits}}</b> · euro találat: <b>{{euro_hits}}</b>\nEgyező fő (növ.): {{matched_main_asc}}\nEgyező euro (növ.): {{matched_euro_asc}}\nSzelvény: {{main_numbers}} + {{euro_numbers}}",
 } as const;
 
 export type MessageKey = keyof typeof huMessages;

@@ -60,6 +60,7 @@ export function formatOtoslottoUserMessage(
     lineLines.push(
       t(locale, "draw_result.line", {
         index: lineIndex + 1,
+        game_name: t(locale, "telegram.game_name_otoslotto"),
         hits: hitCount,
         matched_asc: matchedAscHtml,
         numbers: formatMatchedNumbersRowHtml(playedLine.numbers, winningNumbers),

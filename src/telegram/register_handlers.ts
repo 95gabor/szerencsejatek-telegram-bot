@@ -12,6 +12,7 @@ import {
   parseSupportedGameId,
   type PlayedLine,
   type PrizeAmountsByHits,
+  SUPPORTED_GAME_IDS,
   type SupportedGameId,
 } from "../domain/mod.ts";
 import {
@@ -73,6 +74,24 @@ function formatJackpotAmountHtml(amount: string): string {
     : codeHtml(numericPart);
 }
 
+function gameNameForMessage(locale: Locale, gameId: SupportedGameId): string {
+  return t(
+    locale,
+    gameId === GAME_ID_OTOSLOTTO
+      ? "telegram.game_name_otoslotto"
+      : "telegram.game_name_eurojackpot",
+  );
+}
+
+function tryParseGameId(raw: string | undefined): SupportedGameId | null {
+  if (!raw) return null;
+  try {
+    return parseSupportedGameId(raw.toLowerCase());
+  } catch {
+    return null;
+  }
+}
+
 export function registerTelegramHandlers(bot: Bot, deps: TelegramBotDeps): void {
   const { users, lines, draws, fetcher, gameId, locale } = deps;
   const supportedGameId = parseSupportedGameId(gameId);
@@ -112,23 +131,31 @@ export function registerTelegramHandlers(bot: Bot, deps: TelegramBotDeps): void 
   bot.command("start", async (ctx) => {
     const u = await ensureUser(ctx);
     if (!u) return;
-    await replyHtml(
-      ctx,
-      t(
-        locale,
-        supportedGameId === GAME_ID_OTOSLOTTO ? "telegram.welcome" : "telegram.welcome_eurojackpot",
-      ),
-    );
+    await replyHtml(ctx, t(locale, "telegram.welcome"));
   });
 
   bot.command("help", async (ctx) => {
     const u = await ensureUser(ctx);
     if (!u) return;
+    const args = commandArgs(ctx.message?.text ?? "");
+    if (args.length === 0) {
+      await replyHtml(ctx, t(locale, "telegram.help_general"));
+      return;
+    }
+    if (args.length > 1) {
+      await replyHtml(ctx, t(locale, "telegram.help_usage"));
+      return;
+    }
+    const selectedGameId = tryParseGameId(args[0]);
+    if (!selectedGameId) {
+      await replyHtml(ctx, t(locale, "telegram.game_usage"));
+      return;
+    }
     await replyHtml(
       ctx,
       t(
         locale,
-        supportedGameId === GAME_ID_OTOSLOTTO ? "telegram.help" : "telegram.help_eurojackpot",
+        selectedGameId === GAME_ID_OTOSLOTTO ? "telegram.help" : "telegram.help_eurojackpot",
       ),
     );
   });
@@ -137,28 +164,47 @@ export function registerTelegramHandlers(bot: Bot, deps: TelegramBotDeps): void 
     const u = await ensureUser(ctx);
     if (!u) return;
 
-    const latest = await draws.getLatestDraw(supportedGameId);
-    if (!latest) {
-      await replyHtml(ctx, t(locale, "telegram.last_draw_none"));
+    const args = commandArgs(ctx.message?.text ?? "");
+    const selectedGameId = tryParseGameId(args[0]);
+    if (args.length > 0 && !selectedGameId) {
+      await replyHtml(ctx, t(locale, "telegram.game_usage"));
       return;
     }
-
-    const playedLines = await lines.listLinesForUser(u.id, supportedGameId);
-    const body = formatUserDrawMessageByGame(
-      supportedGameId,
-      locale,
-      latest.drawKey,
-      latest.winningNumbers,
-      playedLines.map((line) => line.numbers),
-      latest.prizeAmountsByHits,
-      latest.lastMaxWinPrize,
+    const gameIdsToShow = selectedGameId ? [selectedGameId] : [...SUPPORTED_GAME_IDS];
+    const sections: string[] = [];
+    for (const gameId of gameIdsToShow) {
+      const playedLines = await lines.listLinesForUser(u.id, gameId);
+      if (playedLines.length === 0) continue;
+      const latest = await draws.getLatestDraw(gameId);
+      if (!latest) {
+        sections.push(
+          `<b>${gameNameForMessage(locale, gameId)}</b>\n${t(locale, "telegram.last_draw_none")}`,
+        );
+        continue;
+      }
+      const body = formatUserDrawMessageByGame(
+        gameId,
+        locale,
+        latest.drawKey,
+        latest.winningNumbers,
+        playedLines.map((line) => line.numbers),
+        latest.prizeAmountsByHits,
+        latest.lastMaxWinPrize,
+      );
+      sections.push([
+        body,
+        "",
+        t(locale, "telegram.last_draw_source", { source: escapeHtml(latest.resultSource) }),
+      ].join("\n"));
+    }
+    if (sections.length === 0) {
+      await replyHtml(ctx, t(locale, "telegram.result_no_lines"));
+      return;
+    }
+    await replyHtml(
+      ctx,
+      sections.join("\n\n"),
     );
-    const text = [
-      body,
-      "",
-      t(locale, "telegram.last_draw_source", { source: escapeHtml(latest.resultSource) }),
-    ].join("\n");
-    await replyHtml(ctx, text);
   });
 
   bot.command("jackpot", async (ctx) => {
@@ -203,28 +249,30 @@ export function registerTelegramHandlers(bot: Bot, deps: TelegramBotDeps): void 
 
     const text = ctx.message?.text ?? "";
     const args = commandArgs(text);
-    if (args.length === 0) {
-      await replyHtml(ctx, t(locale, addUsageMessageKey(supportedGameId)));
+    const selectedGameId = tryParseGameId(args[0]);
+    if (args.length < 2 || !selectedGameId) {
+      await replyHtml(ctx, t(locale, "telegram.add_usage_multi"));
       return;
     }
+    const numberArgs = args.slice(1);
 
-    const nums = args.map((s) => Number(s));
+    const nums = numberArgs.map(Number);
     if (nums.some((n) => Number.isNaN(n))) {
       await replyHtml(
         ctx,
         t(locale, "telegram.add_numbers_must_be_numeric", {
-          usage: t(locale, addUsageMessageKey(supportedGameId)),
+          usage: t(locale, "telegram.add_usage_multi"),
         }),
       );
       return;
     }
 
     try {
-      const line = parseLineFromArgsByGame(supportedGameId, nums);
-      await lines.addLine({ userId: u.id, gameId: supportedGameId, numbers: line });
-      const body = `<b>${t(locale, "telegram.add_saved_label")}</b>\n${
-        formatPlayedLineHtml(supportedGameId, line)
-      }`;
+      const line = parseLineFromArgsByGame(selectedGameId, nums);
+      await lines.addLine({ userId: u.id, gameId: selectedGameId, numbers: line });
+      const body = `<b>${t(locale, "telegram.add_saved_label")}</b> · <b>${
+        gameNameForMessage(locale, selectedGameId)
+      }</b>\n${formatPlayedLineHtml(selectedGameId, line)}`;
       await replyHtml(ctx, body);
     } catch (e) {
       if (e instanceof InvalidOtoslottoLineError) {
@@ -243,16 +291,36 @@ export function registerTelegramHandlers(bot: Bot, deps: TelegramBotDeps): void 
     const u = await ensureUser(ctx);
     if (!u) return;
 
-    const list = await lines.listLinesForUser(u.id, supportedGameId);
-    if (list.length === 0) {
-      await replyHtml(ctx, t(locale, linesEmptyMessageKey(supportedGameId)));
+    const args = commandArgs(ctx.message?.text ?? "");
+    const selectedGameId = tryParseGameId(args[0]);
+    if (args.length > 0 && !selectedGameId) {
+      await replyHtml(ctx, t(locale, "telegram.game_usage"));
       return;
     }
 
-    const rows = list.map(
-      (line, i) => `<b>${i + 1}.</b> ${formatPlayedLineHtml(supportedGameId, line.numbers)}`,
+    const gameIdsToShow = selectedGameId ? [selectedGameId] : [...SUPPORTED_GAME_IDS];
+    const groups = await Promise.all(
+      gameIdsToShow.map(async (gameId) => ({
+        gameId,
+        lines: await lines.listLinesForUser(u.id, gameId),
+      })),
     );
-    const body = `<b>${t(locale, "telegram.lines_title")}</b>\n\n${rows.join("\n")}`;
+    const nonEmptyGroups = groups.filter((group) => group.lines.length > 0);
+    if (nonEmptyGroups.length === 0) {
+      await replyHtml(ctx, t(locale, "telegram.lines_empty_multi"));
+      return;
+    }
+
+    const sections = nonEmptyGroups.map((group) => {
+      const rows = group.lines.map(
+        (line, i) =>
+          `<b>${i + 1}.</b> <code>${line.id}</code> · <b>${
+            gameNameForMessage(locale, group.gameId)
+          }</b> · ${formatPlayedLineHtml(group.gameId, line.numbers)}`,
+      );
+      return `<b>${gameNameForMessage(locale, group.gameId)}</b>\n${rows.join("\n")}`;
+    });
+    const body = `<b>${t(locale, "telegram.lines_title")}</b>\n\n${sections.join("\n\n")}`;
     await replyHtml(ctx, body);
   });
 
@@ -262,24 +330,29 @@ export function registerTelegramHandlers(bot: Bot, deps: TelegramBotDeps): void 
 
     const text = ctx.message?.text ?? "";
     const args = commandArgs(text);
-    const idx = args.length > 0 ? Number(args[0]) : NaN;
+    const selectedGameId = tryParseGameId(args[0]);
+    const idx = args.length > 1 ? Number(args[1]) : Number.NaN;
+    if (!selectedGameId) {
+      await replyHtml(ctx, t(locale, "telegram.remove_usage_multi"));
+      return;
+    }
     if (!Number.isInteger(idx) || idx < 1) {
-      await replyHtml(ctx, t(locale, "telegram.remove_usage"));
+      await replyHtml(ctx, t(locale, "telegram.remove_usage_multi"));
       return;
     }
 
-    const list = await lines.listLinesForUser(u.id, supportedGameId);
+    const list = await lines.listLinesForUser(u.id, selectedGameId);
     const line = list[idx - 1];
     if (!line) {
-      await replyHtml(ctx, t(locale, "telegram.remove_bad_index"));
+      await replyHtml(ctx, t(locale, "telegram.remove_bad_index_multi"));
       return;
     }
 
     const ok = await lines.removeLine(u.id, line.id);
     if (ok) {
-      const body = `<b>${t(locale, "telegram.remove_deleted_label")}</b>\n${
-        formatPlayedLineHtml(supportedGameId, line.numbers)
-      }`;
+      const body = `<b>${t(locale, "telegram.remove_deleted_label")}</b> · <b>${
+        gameNameForMessage(locale, selectedGameId)
+      }</b>\n${formatPlayedLineHtml(selectedGameId, line.numbers)}`;
       await replyHtml(ctx, body);
     } else {
       await replyHtml(ctx, t(locale, "telegram.remove_failed"));
@@ -295,24 +368,9 @@ export function registerTelegramHandlers(bot: Bot, deps: TelegramBotDeps): void 
     }
     await replyHtml(
       ctx,
-      t(
-        locale,
-        supportedGameId === GAME_ID_OTOSLOTTO ? "telegram.help" : "telegram.help_eurojackpot",
-      ),
+      t(locale, "telegram.help_general"),
     );
   });
-}
-
-function addUsageMessageKey(
-  gameId: SupportedGameId,
-): "telegram.add_usage" | "telegram.add_usage_eurojackpot" {
-  return gameId === GAME_ID_OTOSLOTTO ? "telegram.add_usage" : "telegram.add_usage_eurojackpot";
-}
-
-function linesEmptyMessageKey(
-  gameId: SupportedGameId,
-): "telegram.lines_empty" | "telegram.lines_empty_eurojackpot" {
-  return gameId === GAME_ID_OTOSLOTTO ? "telegram.lines_empty" : "telegram.lines_empty_eurojackpot";
 }
 
 function parseLineFromArgsByGame(gameId: SupportedGameId, args: readonly number[]): PlayedLine {

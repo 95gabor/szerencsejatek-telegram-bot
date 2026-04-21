@@ -65,6 +65,7 @@ export function formatEurojackpotUserMessage(
     lineLines.push(
       t(locale, "draw_result.eurojackpot_line", {
         index: lineIndex + 1,
+        game_name: t(locale, "telegram.game_name_eurojackpot"),
         main_hits: hitCount.mainHits,
         euro_hits: hitCount.euroHits,
         matched_main_asc: matchedMainHtml,

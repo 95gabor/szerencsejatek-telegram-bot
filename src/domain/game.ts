@@ -6,6 +6,7 @@ import {
 import { GAME_ID_OTOSLOTTO, type OtoslottoLine, parseOtoslottoLine } from "./otoslotto/mod.ts";
 
 export type SupportedGameId = typeof GAME_ID_OTOSLOTTO | typeof GAME_ID_EUROJACKPOT;
+export const SUPPORTED_GAME_IDS = [GAME_ID_OTOSLOTTO, GAME_ID_EUROJACKPOT] as const;
 
 export type PlayedLine = OtoslottoLine | EurojackpotLine;
 export type DrawWinningNumbers = OtoslottoLine | EurojackpotLine;
