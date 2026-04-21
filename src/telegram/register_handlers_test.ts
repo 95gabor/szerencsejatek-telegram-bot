@@ -430,7 +430,7 @@ Deno.test("eurojackpot /add validates 7-number format and /lines renders plus se
   assertEquals(sentMessages[0]?.text.includes("<b>Mentve</b> · <b>Eurojackpot</b>"), true);
   assertEquals(sentMessages[0]?.text.includes(" + "), true);
   assertEquals(sentMessages[1]?.text.includes("<b>Mentett soraid</b>"), true);
-  assertEquals(sentMessages[1]?.text.includes("<code>line-1</code>"), true);
+  assertEquals(sentMessages[1]?.text.includes("<code>line-1</code>"), false);
   assertEquals(sentMessages[1]?.text.includes("<b>Eurojackpot</b> · "), true);
   assertEquals(sentMessages[1]?.text.includes(" + "), true);
 });

@@ -314,9 +314,9 @@ export function registerTelegramHandlers(bot: Bot, deps: TelegramBotDeps): void 
     const sections = nonEmptyGroups.map((group) => {
       const rows = group.lines.map(
         (line, i) =>
-          `<b>${i + 1}.</b> <code>${line.id}</code> · <b>${
-            gameNameForMessage(locale, group.gameId)
-          }</b> · ${formatPlayedLineHtml(group.gameId, line.numbers)}`,
+          `<b>${i + 1}.</b> <b>${gameNameForMessage(locale, group.gameId)}</b> · ${
+            formatPlayedLineHtml(group.gameId, line.numbers)
+          }`,
       );
       return `<b>${gameNameForMessage(locale, group.gameId)}</b>\n${rows.join("\n")}`;
     });
