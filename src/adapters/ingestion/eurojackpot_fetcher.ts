@@ -18,7 +18,10 @@ function parseEnglishDateToDrawKey(dateText: string): string | null {
   const normalizedDateText = dateText
     .trim()
     .replace(/^[A-Za-z]+,\s*/g, "")
-    .replace(/^[A-Za-z]+\s+/g, "");
+    .replace(/^[A-Za-z]+\s+/g, "")
+    .replace(/\s*\([^)]*\)\s*$/g, "")
+    .replace(/\b(\d{1,2})\s+(st|nd|rd|th)\b/gi, "$1")
+    .replace(/\b(\d{1,2})(st|nd|rd|th)\b/gi, "$1");
   const m = normalizedDateText.match(/^(\d{1,2})\s+([A-Za-z]+)\s+(\d{4})$/);
   if (!m) return null;
   const day = Number.parseInt(m[1] ?? "", 10);
@@ -74,16 +77,23 @@ export function parseEurojackpotLatestFromHtml(
   lastMaxWinPrize?: string;
   nextPossibleMaxWinPrize?: string;
 } | null {
-  const dateMatch = html.match(/<h2[^>]*>[^<]*Results for\s+([^<]+)<\/h2>/i);
-  const drawKey = parseEnglishDateToDrawKey(dateMatch?.[1] ?? "");
+  const headingDate = html.match(/<h2[^>]*>[^<]*Results for\s+([^<]+)<\/h2>/i)?.[1];
+  const dateDivRaw = html.match(/<div[^>]*class="[^"]*\bdate\b[^"]*"[^>]*>([\s\S]*?)<\/div>/i)?.[1];
+  const dateDivText = dateDivRaw
+    ?.replace(/<[^>]*>/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  const drawKey = parseEnglishDateToDrawKey(headingDate ?? dateDivText ?? "");
   if (!drawKey) {
     return null;
   }
 
-  const mainBallNumbers = [...html.matchAll(/class="ball[^"]*">\s*(\d{1,2})\s*</gi)]
+  const mainBallNumbers = [...html.matchAll(/class="ball[^"]*">[\s\S]*?(\d{1,2})[\s\S]*?<\/li>/gi)]
     .map((m) => Number.parseInt(m[1] ?? "", 10))
     .filter((n) => Number.isInteger(n));
-  const euroBallNumbers = [...html.matchAll(/class="euro-ball[^"]*">\s*(\d{1,2})\s*</gi)]
+  const euroBallNumbers = [
+    ...html.matchAll(/class="(?:euro-ball|euro)[^"]*">[\s\S]*?(\d{1,2})[\s\S]*?<\/li>/gi),
+  ]
     .map((m) => Number.parseInt(m[1] ?? "", 10))
     .filter((n) => Number.isInteger(n));
 
@@ -124,6 +134,46 @@ export function parseEurojackpotLatestFromHtml(
     drawKey,
     winningNumbers,
     ...(lastMaxWinPrize ? { lastMaxWinPrize } : {}),
+    ...(nextPossibleMaxWinPrize ? { nextPossibleMaxWinPrize } : {}),
+  };
+}
+
+export function parseMagayoEurojackpotLatestFromHtml(
+  html: string,
+): {
+  drawKey: string;
+  winningNumbers: EurojackpotLine;
+  lastMaxWinPrize?: string;
+  nextPossibleMaxWinPrize?: string;
+} | null {
+  const anchor = html.indexOf("Latest EuroJackpot Results");
+  const slice = anchor >= 0 ? html.slice(anchor, anchor + 9000) : html;
+  const dateMatch = slice.match(/<h5>\s*([^<]+)\s*<\/h5>/i);
+  const drawKey = parseEnglishDateToDrawKey(dateMatch?.[1] ?? "");
+  if (!drawKey) {
+    return null;
+  }
+  const main = [...slice.matchAll(/show_ball\.php\?p1=M(?:&amp;|&)p2=(\d{1,2})/gi)]
+    .slice(0, 5)
+    .map((m) => Number.parseInt(m[1] ?? "", 10));
+  const euro = [...slice.matchAll(/show_ball\.php\?p1=B(?:&amp;|&)p2=(\d{1,2})/gi)]
+    .slice(0, 2)
+    .map((m) => Number.parseInt(m[1] ?? "", 10));
+  if (main.length < 5 || euro.length < 2) {
+    return null;
+  }
+  let winningNumbers: EurojackpotLine;
+  try {
+    winningNumbers = parseEurojackpotLine({ main, euro });
+  } catch {
+    return null;
+  }
+  const nextPossibleMaxWinPrize = extractJackpotAmount(
+    slice.match(/\bNext\s+EuroJackpot\s+Jackpot\b[\s\S]{0,220}/i)?.[0] ?? "",
+  );
+  return {
+    drawKey,
+    winningNumbers,
     ...(nextPossibleMaxWinPrize ? { nextPossibleMaxWinPrize } : {}),
   };
 }
@@ -183,7 +233,8 @@ export class EurojackpotFetcher implements DrawResultFetcher {
       });
       return null;
     }
-    const parsed = parseEurojackpotLatestFromHtml(html);
+    const parsed = parseEurojackpotLatestFromHtml(html) ??
+      parseMagayoEurojackpotLatestFromHtml(html);
     if (!parsed) {
       log.warn("ingestion.eurojackpot.unexpected_shape", { responseUrl: res.url });
       return null;
