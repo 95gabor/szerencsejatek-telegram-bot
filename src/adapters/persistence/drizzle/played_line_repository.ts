@@ -31,6 +31,7 @@ export class DrizzlePlayedLineRepository implements PlayedLineRepository {
       out.push({
         id: r.lineId,
         userId: r.userId,
+        gameId: parseSupportedGameId(r.gameId),
         numbers,
       });
     }
@@ -103,6 +104,7 @@ export class DrizzlePlayedLineRepository implements PlayedLineRepository {
       bucket.lines.push({
         id: r.lineId,
         userId: r.userId,
+        gameId: parseSupportedGameId(r.gameId),
         numbers,
       });
     }

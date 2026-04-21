@@ -8,8 +8,7 @@ import {
   EVENT_TYPE_USER_NOTIFICATION_REQUESTED,
 } from "../events/pipeline.ts";
 import { GAME_ID_OTOSLOTTO } from "../domain/otoslotto/mod.ts";
-import type { FetchedDrawResult } from "../ports/draw_result_fetcher.ts";
-import type { DrawResultFetcher } from "../ports/draw_result_fetcher.ts";
+import type { DrawResultFetcher, FetchedDrawResult } from "../ports/draw_result_fetcher.ts";
 import type { DrawRecordRepository, PlayedLineRepository } from "../ports/repositories.ts";
 import type { EmitCloudEvent } from "../ports/event_emitter.ts";
 import type { OutboundNotifier } from "../ports/outbound_notifier.ts";
@@ -61,6 +60,7 @@ Deno.test("pipeline: update → persist → stored → notification", async () =
             {
               id: "line-1",
               userId: "user-1",
+              gameId: GAME_ID_OTOSLOTTO,
               numbers: [7, 18, 22, 52, 89],
             },
           ],

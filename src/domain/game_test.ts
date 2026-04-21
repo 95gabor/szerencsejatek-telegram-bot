@@ -8,10 +8,15 @@ import {
   parseSupportedGameId,
   serializeDrawPayloadForGame,
   serializeLineForGame,
+  SUPPORTED_GAME_IDS,
 } from "./game.ts";
 
 Deno.test("parseSupportedGameId rejects unknown game ids", () => {
   assertThrows(() => parseSupportedGameId("unknown"), Error, "Unsupported GAME_ID");
+});
+
+Deno.test("SUPPORTED_GAME_IDS lists all supported game ids", () => {
+  assertEquals(SUPPORTED_GAME_IDS, [GAME_ID_OTOSLOTTO, GAME_ID_EUROJACKPOT]);
 });
 
 Deno.test("line serialization and parsing supports otoslotto", () => {

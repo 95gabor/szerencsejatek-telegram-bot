@@ -14,6 +14,7 @@ export type UserRecord = {
 export type PlayedLineRecord = {
   id: string;
   userId: string;
+  gameId: SupportedGameId;
   /** Validated line for selected game (Ötöslottó or Eurojackpot). */
   numbers: PlayedLine;
 };

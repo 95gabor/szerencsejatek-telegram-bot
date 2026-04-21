@@ -12,7 +12,7 @@ import {
   type DrawUpdateRequestedData,
   EVENT_TYPE_DRAW_UPDATE_REQUESTED,
 } from "./events/otoslotto_pipeline.ts";
-import { parseSupportedGameId } from "./domain/mod.ts";
+import { parseSupportedGameId, SUPPORTED_GAME_IDS } from "./domain/mod.ts";
 import { configureLogger, getLogger } from "./logging/mod.ts";
 import {
   httpDurationMs,
@@ -53,6 +53,16 @@ const fetcher = createDrawResultFetcher({
   otoslottoUrl: config.OTOSLOTTO_RESULT_JSON_URL,
   eurojackpotUrl: config.EUROJACKPOT_RESULT_JSON_URL,
 });
+const fetcherByGame = new Map(
+  SUPPORTED_GAME_IDS.map((supportedGameId) => [
+    supportedGameId,
+    createDrawResultFetcher({
+      gameId: supportedGameId,
+      otoslottoUrl: config.OTOSLOTTO_RESULT_JSON_URL,
+      eurojackpotUrl: config.EUROJACKPOT_RESULT_JSON_URL,
+    }),
+  ]),
+);
 
 const notifierState: { delegate: OutboundNotifier | null } = {
   delegate: botToken ? null : new NoopOutboundNotifier(),
@@ -178,34 +188,49 @@ if (denoCronResultCheckEnabled) {
     });
     Deno.exit(1);
   }
-  const cronName = `${gameId}-hourly-draw-update`;
+  const cronName = "all-games-hourly-draw-update";
   const cronSchedule = "0 * * * *";
   denoCron(cronName, cronSchedule, async () => {
-    const event = createCloudEvent<DrawUpdateRequestedData>({
-      id: crypto.randomUUID(),
-      source: "cron/deno",
-      type: EVENT_TYPE_DRAW_UPDATE_REQUESTED,
-      datacontenttype: "application/json",
-      data: { gameId },
-    });
-    try {
-      await dispatchPipelineEvent(event, pipelineDeps);
-      log.info("cron.draw_update.completed", {
-        cron_name: cronName,
-        cron_schedule: cronSchedule,
-        game_id: gameId,
+    for (const scheduledGameId of SUPPORTED_GAME_IDS) {
+      const scheduledFetcher = fetcherByGame.get(scheduledGameId);
+      if (!scheduledFetcher) {
+        log.error("cron.draw_update.fetcher_missing", {
+          cron_name: cronName,
+          game_id: scheduledGameId,
+        });
+        continue;
+      }
+      const event = createCloudEvent<DrawUpdateRequestedData>({
+        id: crypto.randomUUID(),
+        source: "cron/deno",
+        type: EVENT_TYPE_DRAW_UPDATE_REQUESTED,
+        datacontenttype: "application/json",
+        data: { gameId: scheduledGameId },
       });
-    } catch (error) {
-      log.error("cron.draw_update.failed", {
-        cron_name: cronName,
-        error: error instanceof Error ? error.message : String(error),
-      });
+      try {
+        await dispatchPipelineEvent(event, {
+          ...pipelineDeps,
+          gameId: scheduledGameId,
+          fetcher: scheduledFetcher,
+        });
+        log.info("cron.draw_update.completed", {
+          cron_name: cronName,
+          cron_schedule: cronSchedule,
+          game_id: scheduledGameId,
+        });
+      } catch (error) {
+        log.error("cron.draw_update.failed", {
+          cron_name: cronName,
+          game_id: scheduledGameId,
+          error: error instanceof Error ? error.message : String(error),
+        });
+      }
     }
   });
   log.info("cron.draw_update.enabled", {
     cron_name: cronName,
     cron_schedule: cronSchedule,
-    game_id: gameId,
+    game_ids: SUPPORTED_GAME_IDS,
   });
 }
 

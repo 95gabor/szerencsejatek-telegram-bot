@@ -37,7 +37,7 @@ Deno.test("formatOtoslottoUserMessage shows hit count, matched ascending, and fu
       "<b>3</b> találat: <code>29 850</code> Ft",
       "<b>2</b> találat: <code>3 385</code> Ft",
       "",
-      "<b>1.</b> sor · <b>2</b> találat · egyező (növ.): <code>7</code> · <code>22</code>",
+      "<b>1.</b> sor · <b>Ötöslottó</b> · <b>2</b> találat · egyező (növ.): <code>7</code> · <code>22</code>",
       "Szelvény: <b><code>7</code></b> · <code>11</code> · <b><code>22</code></b> · <code>44</code> · <code>88</code>",
     ].join("\n"),
   );
@@ -52,7 +52,7 @@ Deno.test("formatOtoslottoUserMessage uses em dash when zero hits on a line", ()
   );
   assertEquals(
     message.includes(
-      "<b>1.</b> sor · <b>0</b> találat · egyező (növ.): —\nSzelvény:",
+      "<b>1.</b> sor · <b>Ötöslottó</b> · <b>0</b> találat · egyező (növ.): —\nSzelvény:",
     ),
     true,
   );

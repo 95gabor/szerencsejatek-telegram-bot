@@ -29,7 +29,7 @@ Deno.test("formatEurojackpotUserMessage includes main/euro hit details", () => {
       "<b>Max nyeremény</b>",
       "Utolsó max nyeremény: <code>3 000 000 000</code> Ft",
       "",
-      "<b>1.</b> sor · fő találat: <b>3</b> · euro találat: <b>1</b>",
+      "<b>1.</b> sor · <b>Eurojackpot</b> · fő találat: <b>3</b> · euro találat: <b>1</b>",
       "Egyező fő (növ.): <code>3</code> · <code>27</code> · <code>50</code>",
       "Egyező euro (növ.): <code>10</code>",
       "Szelvény: <b><code>3</code></b> · <code>11</code> · <b><code>27</code></b> · <code>44</code> · <b><code>50</code></b> + <code>1</code> · <b><code>10</code></b>",
