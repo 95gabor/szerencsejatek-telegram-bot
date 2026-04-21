@@ -50,3 +50,31 @@ Deno.test("EurojackpotFetcher returns parsed payload via fetchImpl", async () =>
   assertEquals(parsed?.winningNumbers, { main: [5, 11, 23, 38, 49], euro: [2, 10] });
   assertEquals(parsed?.nextPossibleMaxWinPrize, "120 000 000 EUR");
 });
+
+Deno.test("EurojackpotFetcher falls back to Magayo URL when primary fails", async () => {
+  const calls: string[] = [];
+  const fetcher = new EurojackpotFetcher({
+    url: "https://example.test/primary",
+    fallbackUrl: "https://example.test/fallback",
+    fetchImpl: (input) => {
+      const url = String(input);
+      calls.push(url);
+      if (url.includes("/primary")) {
+        return Promise.resolve(new Response("not found", { status: 404 }));
+      }
+      return Promise.resolve(
+        new Response(sampleHtml, {
+          status: 200,
+          headers: { "content-type": "text/html" },
+        }),
+      );
+    },
+  });
+  const parsed = await fetcher.fetchLatestDraw();
+  assertEquals(calls, ["https://example.test/primary", "https://example.test/fallback"]);
+  assertEquals(parsed?.drawKey, "2026-04-17");
+  assertEquals(
+    parsed?.resultSource,
+    "magayo.com Hungary Eurojackpot results (third-party fallback)",
+  );
+});

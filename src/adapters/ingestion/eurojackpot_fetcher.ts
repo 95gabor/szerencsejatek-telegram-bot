@@ -6,9 +6,13 @@ import {
 import { getLogger } from "../../logging/mod.ts";
 import type { DrawResultFetcher, FetchedDrawResult } from "../../ports/draw_result_fetcher.ts";
 
-export const DEFAULT_EUROJACKPOT_RESULT_JSON_URL = "https://www.euro-jackpot.net/en/results/";
+export const DEFAULT_EUROJACKPOT_RESULT_JSON_URL = "https://www.euro-jackpot.net/en/results";
+export const DEFAULT_EUROJACKPOT_FALLBACK_HTML_URL =
+  "https://www.magayo.com/lotto/hungary/eurojackpot-results/";
 
 const RESULT_SOURCE_LABEL = "euro-jackpot.net results";
+const RESULT_SOURCE_LABEL_FALLBACK =
+  "magayo.com Hungary Eurojackpot results (third-party fallback)";
 
 function parseEnglishDateToDrawKey(dateText: string): string | null {
   const normalizedDateText = dateText
@@ -126,23 +130,29 @@ export function parseEurojackpotLatestFromHtml(
 
 export type EurojackpotFetcherOptions = {
   url: string;
+  fallbackUrl?: string;
   fetchImpl?: typeof fetch;
 };
 
 export class EurojackpotFetcher implements DrawResultFetcher {
   private readonly url: string;
+  private readonly fallbackUrl: string;
   private readonly fetchImpl: typeof fetch;
 
   constructor(options: EurojackpotFetcherOptions) {
     this.url = options.url;
+    this.fallbackUrl = options.fallbackUrl ?? DEFAULT_EUROJACKPOT_FALLBACK_HTML_URL;
     this.fetchImpl = options.fetchImpl ?? globalThis.fetch;
   }
 
-  async fetchLatestDraw(): Promise<FetchedDrawResult | null> {
+  private async fetchAndParse(
+    url: string,
+    resultSource: string,
+  ): Promise<FetchedDrawResult | null> {
     const log = getLogger();
     let res: Response;
     try {
-      res = await this.fetchImpl(this.url, {
+      res = await this.fetchImpl(url, {
         headers: {
           Accept: "text/html,application/json;q=0.9,*/*;q=0.8",
           "User-Agent": "szerencsejatek-telegram-bot/1.0 (Eurojackpot ingestion)",
@@ -187,7 +197,7 @@ export class EurojackpotFetcher implements DrawResultFetcher {
       return {
         drawKey: parsed.drawKey,
         winningNumbers,
-        resultSource: RESULT_SOURCE_LABEL,
+        resultSource,
         lastMaxWinPrize: parsed.lastMaxWinPrize,
         nextPossibleMaxWinPrize: parsed.nextPossibleMaxWinPrize,
       };
@@ -198,5 +208,13 @@ export class EurojackpotFetcher implements DrawResultFetcher {
       }
       throw error;
     }
+  }
+
+  async fetchLatestDraw(): Promise<FetchedDrawResult | null> {
+    const primary = await this.fetchAndParse(this.url, RESULT_SOURCE_LABEL);
+    if (primary) {
+      return primary;
+    }
+    return await this.fetchAndParse(this.fallbackUrl, RESULT_SOURCE_LABEL_FALLBACK);
   }
 }

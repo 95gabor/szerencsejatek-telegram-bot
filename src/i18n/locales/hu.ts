@@ -28,7 +28,7 @@ export const huMessages = {
     "/help otoslotto — ez a részletes útmutató megjelenítése.\n\n" +
     "<b>Új szelvény</b>\n" +
     "/add otoslotto <code>7</code> <code>14</code> <code>23</code> <code>41</code> <code>88</code> — mentéskor a visszaigazolás tartalmazza a játék nevét.\n\n" +
-    "<b>Szelvényeid</b>\n/lines — minden játék mentett sorai.\n/lines otoslotto — csak Ötöslottó sorok ID-val és indexszel.\n\n" +
+    "<b>Szelvényeid</b>\n/lines — minden játék mentett sorai.\n/lines otoslotto — csak Ötöslottó sorok indexszel.\n\n" +
     "<b>Utolsó eredmény</b>\n/result — minden olyan játék eredménye, ahol van mentett sorod.\n/result otoslotto — csak Ötöslottó eredmény.\n\n" +
     "<b>Jackpot</b>\n/jackpot — utolsó és következő várható max nyeremény (forrás: ...).\n\n" +
     "<b>Törlés</b>\n/remove otoslotto <code>1</code> törli az Ötöslottó 1. sort (játékon belüli index), és a visszaigazolásban megjelenik a játék neve.\n\n" +
@@ -38,7 +38,7 @@ export const huMessages = {
     "/help eurojackpot — ez a részletes útmutató megjelenítése.\n\n" +
     "<b>Új szelvény</b>\n" +
     "/add eurojackpot <code>7</code> <code>14</code> <code>23</code> <code>41</code> <code>50</code> <code>2</code> <code>11</code> — mentéskor a visszaigazolás tartalmazza a játék nevét.\n\n" +
-    "<b>Szelvényeid</b>\n/lines — minden játék mentett sorai.\n/lines eurojackpot — csak Eurojackpot sorok ID-val és indexszel.\n\n" +
+    "<b>Szelvényeid</b>\n/lines — minden játék mentett sorai.\n/lines eurojackpot — csak Eurojackpot sorok indexszel.\n\n" +
     "<b>Utolsó eredmény</b>\n/result — minden olyan játék eredménye, ahol van mentett sorod.\n/result eurojackpot — csak Eurojackpot eredmény.\n\n" +
     "<b>Jackpot</b>\n/jackpot — utolsó és következő várható max nyeremény (forrás: ...).\n\n" +
     "<b>Törlés</b>\n/remove eurojackpot <code>1</code> törli az Eurojackpot 1. sort (játékon belüli index), és a visszaigazolásban megjelenik a játék neve.\n\n" +
