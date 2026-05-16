@@ -44,7 +44,7 @@ Pinned in source imports (see also `deno.lock`):
 | -------------------- | ------------------------ | --------------------------------------------------------------------------------------------- |
 | `npm:drizzle-orm`    | `0.45.1`                 | Schema + query builder for both adapters (`libsql`, `postgres-js`, `sqlite-core`, `pg-core`). |
 | `npm:@libsql/client` | `0.14.0` (`/node` entry) | libSQL client for SQLite `file:` URLs (`createClient` in `client.ts` / `ensure_schema.ts`).   |
-| `npm:postgres`       | `3.4.8`                  | PostgreSQL client used by Drizzle `postgres-js` adapter and schema bootstrap SQL.             |
+| `npm:postgres`       | `3.4.9`                  | PostgreSQL client used by Drizzle `postgres-js` adapter and schema bootstrap SQL.             |
 
 ## Review
 

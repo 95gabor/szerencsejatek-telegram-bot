@@ -49,7 +49,7 @@ Pinned in `deno.json` imports:
 | Package           | Version   | Role                                                                                                                     |
 | ----------------- | --------- | ------------------------------------------------------------------------------------------------------------------------ |
 | `jsr:@std/dotenv` | `0.225.6` | Load `./.env` into `Deno.env` before Zod parse (`loadSync` + export).                                                    |
-| `npm:zod`         | `3.24.2`  | `z.object` schema for env; `z.infer` for `AppConfig`; preprocess typed boolean flags (e.g. warmup-safe startup toggles). |
+| `npm:zod`         | `3.25.76` | `z.object` schema for env; `z.infer` for `AppConfig`; preprocess typed boolean flags (e.g. warmup-safe startup toggles). |
 
 ## Review
 
