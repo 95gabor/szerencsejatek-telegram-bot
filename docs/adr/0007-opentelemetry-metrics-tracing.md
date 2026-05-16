@@ -46,14 +46,14 @@ Pinned in `deno.json` imports:
 
 | Package                                         | Version  | Role                                               |
 | ----------------------------------------------- | -------- | -------------------------------------------------- |
-| `npm:@opentelemetry/api`                        | `1.9.0`  | Trace/metrics API                                  |
-| `npm:@opentelemetry/context-async-hooks`        | `1.28.0` | `AsyncLocalStorageContextManager` (active context) |
-| `npm:@opentelemetry/sdk-trace-base`             | `1.28.0` | `BasicTracerProvider`, `BatchSpanProcessor`        |
-| `npm:@opentelemetry/sdk-metrics`                | `1.28.0` | `MeterProvider`, `PeriodicExportingMetricReader`   |
-| `npm:@opentelemetry/resources`                  | `1.28.0` | `Resource` (service name/version)                  |
+| `npm:@opentelemetry/api`                        | `1.9.1`  | Trace/metrics API                                  |
+| `npm:@opentelemetry/context-async-hooks`        | `1.30.1` | `AsyncLocalStorageContextManager` (active context) |
+| `npm:@opentelemetry/sdk-trace-base`             | `1.30.1` | `BasicTracerProvider`, `BatchSpanProcessor`        |
+| `npm:@opentelemetry/sdk-metrics`                | `1.30.1` | `MeterProvider`, `PeriodicExportingMetricReader`   |
+| `npm:@opentelemetry/resources`                  | `1.30.1` | `Resource` (service name/version)                  |
 | `npm:@opentelemetry/exporter-trace-otlp-http`   | `0.57.2` | OTLP trace HTTP                                    |
 | `npm:@opentelemetry/exporter-metrics-otlp-http` | `0.57.2` | OTLP metrics HTTP                                  |
-| `npm:@opentelemetry/semantic-conventions`       | `1.28.0` | `ATTR_SERVICE_*`                                   |
+| `npm:@opentelemetry/semantic-conventions`       | `1.41.1` | `ATTR_SERVICE_*`                                   |
 
 ## Review
 

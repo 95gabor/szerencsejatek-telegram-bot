@@ -1,5 +1,5 @@
 import { drizzle } from "npm:drizzle-orm@0.45.1/postgres-js";
-import postgres from "npm:postgres@3.4.8";
+import postgres from "postgres";
 import * as schema from "./schema.ts";
 
 export type AppPostgresDatabase = ReturnType<typeof createPostgresDatabase>;

@@ -84,7 +84,7 @@ jobs:
 
       - uses: azure/setup-helm@v5
         with:
-          version: v3.16.3
+          version: v3.21.0
 
       - name: Helm lint
         run: helm lint deploy/helm/szerencsejatek-telegram-bot

@@ -1,4 +1,4 @@
-import postgres from "npm:postgres@3.4.8";
+import postgres from "postgres";
 import { normalizeDatabaseUrlForPostgres } from "../drizzle/database_url.ts";
 
 const STATEMENTS = [

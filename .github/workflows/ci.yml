@@ -24,14 +24,14 @@ jobs:
 
       - uses: denoland/setup-deno@v2
         with:
-          deno-version: v2.7.7
+          deno-version: v2.7.14
 
       - name: Deno (fmt, lint, test)
         run: deno task check
 
       - uses: azure/setup-helm@v5
         with:
-          version: v3.16.3
+          version: v3.21.0
 
       - name: Helm lint
         run: deno task helm:lint
