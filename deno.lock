@@ -562,9 +562,8 @@
         "which-typed-array"
       ]
     },
-    "uuid@8.3.2": {
-      "integrity": "sha512-+NYs2QeMWy+GWFOEm9xnn6HCDp0l7QBD7ml8zLUmJ+93Q5NF0NocErnwkTkXVFNiX3/fpC6afS8Dhb/gz7R7eg==",
-      "deprecated": true,
+    "uuid@11.1.1": {
+      "integrity": "sha512-vIYxrBCC/N/K+Js3qSN88go7kIfNPssr/hHCesKCQNAjmgvYS2oqr69kIufEG+O4+PfezOH4EbIeHCfFov8ZgQ==",
       "bin": true
     },
     "webidl-conversions@3.0.1": {
@@ -611,6 +610,11 @@
       "npm:grammy@1.44.0",
       "npm:postgres@3.4.9",
       "npm:zod@4.4.3"
-    ]
+    ],
+    "packageJson": {
+      "overrides": {
+        "uuid": "11.1.1"
+      }
+    }
   }
 }

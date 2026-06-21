@@ -44,16 +44,16 @@ and managed OTLP endpoints.
 
 Pinned in `deno.json` imports:
 
-| Package                                         | Version  | Role                                               |
-| ----------------------------------------------- | -------- | -------------------------------------------------- |
-| `npm:@opentelemetry/api`                        | `1.9.1`  | Trace/metrics API                                  |
+| Package                                         | Version   | Role                                               |
+| ----------------------------------------------- | --------- | -------------------------------------------------- |
+| `npm:@opentelemetry/api`                        | `1.9.1`   | Trace/metrics API                                  |
 | `npm:@opentelemetry/context-async-hooks`        | `2.8.0`   | `AsyncLocalStorageContextManager` (active context) |
 | `npm:@opentelemetry/sdk-trace-base`             | `2.8.0`   | `BasicTracerProvider`, `BatchSpanProcessor`        |
 | `npm:@opentelemetry/sdk-metrics`                | `2.8.0`   | `MeterProvider`, `PeriodicExportingMetricReader`   |
 | `npm:@opentelemetry/resources`                  | `2.8.0`   | `resourceFromAttributes` (service name/version)    |
 | `npm:@opentelemetry/exporter-trace-otlp-http`   | `0.219.0` | OTLP trace HTTP                                    |
 | `npm:@opentelemetry/exporter-metrics-otlp-http` | `0.219.0` | OTLP metrics HTTP                                  |
-| `npm:@opentelemetry/semantic-conventions`       | `1.41.1` | `ATTR_SERVICE_*`                                   |
+| `npm:@opentelemetry/semantic-conventions`       | `1.41.1`  | `ATTR_SERVICE_*`                                   |
 
 ## Review
 

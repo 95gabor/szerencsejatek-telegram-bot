@@ -19,17 +19,17 @@ why the chosen approach won.
 
 ## Dependency inventory
 
-Third-party packages **pinned in `deno.json` / source** are recorded per ADR (versions in each ADR’s
-**Dependencies** section):
+Third-party packages **pinned in `deno.json` / source / `package.json` overrides** are recorded per
+ADR (versions in each ADR’s **Dependencies** section):
 
-| ADR                                                        | Packages                                                                                                                                                                                                                           |
-| ---------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [0001](0001-cloud-events-pipeline.md#dependencies)         | In-process pipeline: **none**; defers wire parsing to 0003.                                                                                                                                                                        |
-| [0002](0002-drizzle-libsql-sqlite.md#dependencies)         | `drizzle-orm@0.45.2`, `@libsql/client@0.17.4`, `postgres@3.4.9`                                                                                                                                                                    |
-| [0003](0003-http-cloudevents-knative.md#dependencies)      | `cloudevents@10.0.0`                                                                                                                                                                                                               |
-| [0005](0005-telegram-grammy.md#dependencies)               | `grammy@1.44.0`                                                                                                                                                                                                                    |
-| [0006](0006-zod-config-and-i18n.md#dependencies)           | `@std/dotenv@0.225.7`, `zod@4.4.3`                                                                                                                                                                                                 |
-| [0007](0007-opentelemetry-metrics-tracing.md#dependencies) | `@opentelemetry/api@1.9.1`, `context-async-hooks@2.8.0`, `sdk-trace-base@2.8.0`, `sdk-metrics@2.8.0`, `resources@2.8.0`, `exporter-trace-otlp-http@0.219.0`, `exporter-metrics-otlp-http@0.219.0`, `semantic-conventions@1.41.1`   |
+| ADR                                                        | Packages                                                                                                                                                                                                                         |
+| ---------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [0001](0001-cloud-events-pipeline.md#dependencies)         | In-process pipeline: **none**; defers wire parsing to 0003.                                                                                                                                                                      |
+| [0002](0002-drizzle-libsql-sqlite.md#dependencies)         | `drizzle-orm@0.45.2`, `@libsql/client@0.17.4`, `postgres@3.4.9`                                                                                                                                                                  |
+| [0003](0003-http-cloudevents-knative.md#dependencies)      | `cloudevents@10.0.0`, transitive override `uuid@11.1.1`                                                                                                                                                                          |
+| [0005](0005-telegram-grammy.md#dependencies)               | `grammy@1.44.0`                                                                                                                                                                                                                  |
+| [0006](0006-zod-config-and-i18n.md#dependencies)           | `@std/dotenv@0.225.7`, `zod@4.4.3`                                                                                                                                                                                               |
+| [0007](0007-opentelemetry-metrics-tracing.md#dependencies) | `@opentelemetry/api@1.9.1`, `context-async-hooks@2.8.0`, `sdk-trace-base@2.8.0`, `sdk-metrics@2.8.0`, `resources@2.8.0`, `exporter-trace-otlp-http@0.219.0`, `exporter-metrics-otlp-http@0.219.0`, `semantic-conventions@1.41.1` |
 
 **Test-only** (not product ADRs): `jsr:@std/assert@1` in unit and e2e tests.
 

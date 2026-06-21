@@ -36,9 +36,10 @@ entry that parses **structured** and **binary** CloudEvents reliably.
 
 Pinned in `deno.json` **import map** and `deno.lock`:
 
-| Package           | Version  | Role                                                                                         |
-| ----------------- | -------- | -------------------------------------------------------------------------------------------- |
-| `npm:cloudevents` | `10.0.0` | Import key **`cloudevents`** → `HTTP.toEvent` in `src/adapters/http/cloudevents_request.ts`. |
+| Package               | Version  | Role                                                                                         |
+| --------------------- | -------- | -------------------------------------------------------------------------------------------- |
+| `npm:cloudevents`     | `10.0.0` | Import key **`cloudevents`** → `HTTP.toEvent` in `src/adapters/http/cloudevents_request.ts`. |
+| `npm:uuid` (override) | `11.1.1` | Transitive CloudEvents dependency pinned in `package.json` to avoid GHSA-w5hq-g745-h8pq.     |
 
 ## Review
 
