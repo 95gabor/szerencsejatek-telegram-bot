@@ -1,4 +1,4 @@
-import { eq } from "npm:drizzle-orm@0.45.1";
+import { eq } from "npm:drizzle-orm@0.45.2";
 import type { UserRepository } from "../../../ports/mod.ts";
 import type { AppPostgresDatabase } from "./client.ts";
 import { users } from "./schema.ts";

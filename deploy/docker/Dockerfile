@@ -1,5 +1,5 @@
 # Deno ≥2.3 reads lockfile version 5 (see deno.lock)
-FROM denoland/deno:2.7.14
+FROM denoland/deno:2.8.3
 
 WORKDIR /app
 

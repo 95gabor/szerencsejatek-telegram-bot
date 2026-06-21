@@ -36,7 +36,7 @@ and when **official results** are available the bot **notifies** them with the w
 
 ## Prerequisites
 
-- [Deno](https://deno.land/) **2.7.14** (Dockerfile and CI pin; use the same locally for fewer
+- [Deno](https://deno.land/) **2.8.3** (Dockerfile and CI pin; use the same locally for fewer
   surprises).
 
 ## CI

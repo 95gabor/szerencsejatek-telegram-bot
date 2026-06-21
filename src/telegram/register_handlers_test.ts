@@ -60,6 +60,7 @@ function createDeps(sentMessages: SentMessage[], overrides: HandlerTestOverrides
       can_join_groups: true,
       can_read_all_group_messages: false,
       supports_inline_queries: false,
+      supports_join_request_queries: false,
       can_connect_to_business: false,
       has_main_web_app: false,
       can_manage_bots: false,

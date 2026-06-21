@@ -1,4 +1,4 @@
-import { index, integer, sqliteTable, text, uniqueIndex } from "npm:drizzle-orm@0.45.1/sqlite-core";
+import { index, integer, sqliteTable, text, uniqueIndex } from "npm:drizzle-orm@0.45.2/sqlite-core";
 
 /** Registered Telegram users. */
 export const users = sqliteTable(
