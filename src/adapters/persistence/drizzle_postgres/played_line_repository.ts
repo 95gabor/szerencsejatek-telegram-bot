@@ -1,4 +1,4 @@
-import { and, asc, eq } from "npm:drizzle-orm@0.45.1";
+import { and, asc, eq } from "npm:drizzle-orm@0.45.2";
 import {
   parseLineForGame,
   parseSupportedGameId,

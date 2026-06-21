@@ -1,5 +1,5 @@
-import { createClient } from "npm:@libsql/client@0.14.0/node";
-import { drizzle } from "npm:drizzle-orm@0.45.1/libsql";
+import { createClient } from "npm:@libsql/client@0.17.4/node";
+import { drizzle } from "npm:drizzle-orm@0.45.2/libsql";
 import * as schema from "./schema.ts";
 import { normalizeDatabaseUrlForLibsql } from "./database_url.ts";
 

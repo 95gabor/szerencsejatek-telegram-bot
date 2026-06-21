@@ -1,4 +1,4 @@
-import { createClient } from "npm:@libsql/client@0.14.0/node";
+import { createClient } from "npm:@libsql/client@0.17.4/node";
 import { normalizeDatabaseUrlForLibsql } from "./database_url.ts";
 
 const STATEMENTS = [

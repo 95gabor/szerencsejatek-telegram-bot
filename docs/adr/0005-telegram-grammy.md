@@ -38,7 +38,7 @@ Pinned in `deno.json` **import map** and `deno.lock`:
 
 | Package      | Version  | Role                                                                 |
 | ------------ | -------- | -------------------------------------------------------------------- |
-| `npm:grammy` | `1.43.0` | Import key **`grammy`** → `Bot`, `webhookCallback`, command routing. |
+| `npm:grammy` | `1.44.0` | Import key **`grammy`** → `Bot`, `webhookCallback`, command routing. |
 
 ## Review
 

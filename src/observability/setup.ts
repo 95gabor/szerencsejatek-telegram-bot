@@ -1,7 +1,7 @@
 import { metrics, trace } from "@opentelemetry/api";
 import { OTLPMetricExporter } from "@opentelemetry/exporter-metrics-otlp-http";
 import { OTLPTraceExporter } from "@opentelemetry/exporter-trace-otlp-http";
-import { Resource } from "@opentelemetry/resources";
+import { resourceFromAttributes } from "@opentelemetry/resources";
 import { ATTR_SERVICE_NAME, ATTR_SERVICE_VERSION } from "@opentelemetry/semantic-conventions";
 import { MeterProvider, PeriodicExportingMetricReader } from "@opentelemetry/sdk-metrics";
 import { BasicTracerProvider, BatchSpanProcessor } from "@opentelemetry/sdk-trace-base";
@@ -34,14 +34,16 @@ export function initObservability(config: ObservabilityConfig): void {
   }
 
   const base = normalizeOtlpBase(config.otlpBaseUrl);
-  const resource = new Resource({
+  const resource = resourceFromAttributes({
     [ATTR_SERVICE_NAME]: config.serviceName,
     [ATTR_SERVICE_VERSION]: config.serviceVersion,
   });
 
   const traceExporter = new OTLPTraceExporter({ url: `${base}/v1/traces` });
-  tracerProvider = new BasicTracerProvider({ resource });
-  tracerProvider.addSpanProcessor(new BatchSpanProcessor(traceExporter));
+  tracerProvider = new BasicTracerProvider({
+    resource,
+    spanProcessors: [new BatchSpanProcessor(traceExporter)],
+  });
   trace.setGlobalTracerProvider(tracerProvider);
 
   const metricExporter = new OTLPMetricExporter({ url: `${base}/v1/metrics` });

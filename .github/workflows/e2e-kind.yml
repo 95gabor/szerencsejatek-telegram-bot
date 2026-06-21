@@ -31,25 +31,25 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - uses: denoland/setup-deno@v2
         with:
-          deno-version: v2.7.14
+          deno-version: v2.8.3
 
       - name: Install kubectl
         uses: azure/setup-kubectl@v5
 
       - name: Install kind
         run: |
-          curl -sLO "https://github.com/kubernetes-sigs/kind/releases/download/v0.31.0/kind-linux-amd64"
+          curl -sLO "https://github.com/kubernetes-sigs/kind/releases/download/v0.32.0/kind-linux-amd64"
           chmod +x kind-linux-amd64
           sudo mv kind-linux-amd64 /usr/local/bin/kind
 
       - name: Install Helm
         uses: azure/setup-helm@v5
         with:
-          version: v3.21.0
+          version: v3.21.2
 
       - name: kind + kubectl + helm smoke
         run: deno task test:e2e

@@ -1,4 +1,4 @@
-import { desc, eq } from "npm:drizzle-orm@0.45.1";
+import { desc, eq } from "npm:drizzle-orm@0.45.2";
 import {
   type DrawWinningNumbers,
   parseDrawPayloadForGame,

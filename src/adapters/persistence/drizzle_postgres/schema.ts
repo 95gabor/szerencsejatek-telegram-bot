@@ -1,4 +1,4 @@
-import { index, pgTable, text, timestamp, uniqueIndex } from "npm:drizzle-orm@0.45.1/pg-core";
+import { index, pgTable, text, timestamp, uniqueIndex } from "npm:drizzle-orm@0.45.2/pg-core";
 
 /** Registered Telegram users. */
 export const users = pgTable(
